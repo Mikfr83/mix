@@ -1,2 +1,2 @@
-# poise
+# MIX
 PSD and weight manager
