@@ -1,6 +1,6 @@
 import sys
 from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
-from poise.ui import *
+from mix.ui import *
 
 class InputDialog(MayaQWidgetBaseMixin, QtWidgets.QWidget):
     def __init__(self, parent=None):

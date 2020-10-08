@@ -1,9 +1,9 @@
 '''
 Node will track and manage all data with-in a node
 '''
-import poise.pDict as pDict
-import poise.pAttribute as pAttribute
-import poise.pObject as pObject
+import mix.pDict as pDict
+import mix.pAttribute as pAttribute
+import mix.pObject as pObject
 class PNode(pObject.PObject):
     '''
     Base node to manage all data for nodes

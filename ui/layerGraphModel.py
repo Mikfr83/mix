@@ -1,10 +1,10 @@
 '''
 UI models 
 '''
-from poise.ui import *
+from mix.ui import *
 
 #Japeto modules
-from poise import pGraph, pNode
+from mix import pGraph, pNode
 
 class LayerGraphModel(QtCore.QAbstractItemModel):
     NodeRole = QtCore.Qt.UserRole

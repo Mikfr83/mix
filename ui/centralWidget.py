@@ -434,13 +434,11 @@ class CentralTabWidget(QtWidgets.QTabWidget):
 
         # Initialize menu if one is not passed
         if not menu:
-            #menu = RadialMenu()
-            menu = rigrepo.ui.radialMenu.RadialMenu()
+            menu = mix.ui.radialMenu.RadialMenu()
             menu.rightClickConnect(parentWidget)
 
         for n in item_list:
-            #item = RadialMenuItem(position=n['position'], text=n['text'])
-            item = rigrepo.ui.radialMenu.RadialMenuItem(position=n['position'], text=n['text'])
+            item = mix.ui.radialMenu.RadialMenuItem(position=n['position'], text=n['text'])
             item.connect(n['func'])
             menu.addItem(item)
 

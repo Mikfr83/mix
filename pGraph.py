@@ -1,5 +1,5 @@
-import poise.pObject as pObject
-import poise.pNode as pNode
+import mix.pObject as pObject
+import mix.pNode as pNode
 
 class PGraph(pObject.PObject):
     def __init__(self, name):

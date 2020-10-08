@@ -3,10 +3,10 @@ Fields that are used in our UI
 
 #.. todo: Make a field specifically for lists
 '''
-from poise.ui import *
-import poise.ui.layerGraphModel as layerGraphModel
-import poise.pGraph as pGraph
-import poise.pNode as pNode
+from mix.ui import *
+import mix.ui.layerGraphModel as layerGraphModel
+import mix.pGraph as pGraph
+import mix.pNode as pNode
 
 class BaseField(QtWidgets.QWidget):
     font = QtGui.QFont("Arial", 12)

@@ -1,4 +1,4 @@
-import poise.pGraph as pGraph
+import mix.pGraph as pGraph
 
 class UGraph(pGraph.PGraph):
     def __init__(self, name):

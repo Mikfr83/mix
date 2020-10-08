@@ -235,6 +235,7 @@ def duplicate_shape(pose_graph):
         pose = node.getAttributeByName('full_name').getValue()
         dup = rig_psd.duplicatePoseShape(interp, pose)
         mc.hide(dup)
+        mc.select(dup)
         node.editOn()
 
 def isolate_shape(pose_graph):
