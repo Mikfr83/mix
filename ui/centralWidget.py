@@ -1,17 +1,14 @@
 '''
-poise central widget
+mix central widget
 '''
-from poise.ui import *
+from mix.ui import *
 
-#poise modules
-from poise.ui import layerGraphModel, layerGraphTreeView, fields
-import poise.pGraph as pGraph
-import poise.pNode as pNode
-import rigrepo.ui.radialMenu
-reload(rigrepo.ui.radialMenu)
-from rigrepo.ui.radialMenu import RadialMenu, RadialMenuItem
-reload(rigrepo.ui.radialMenu)
-from functools import partial
+#mix modules
+from mix.ui import layerGraphModel, layerGraphTreeView, fields
+import mix.pGraph as pGraph
+import mix.pNode as pNode
+import mix.ui.radialMenu
+reload(mix.ui.radialMenu)
 
 class CentralTabWidget(QtWidgets.QTabWidget):
     def __init__(self, primary_graph = pGraph.PGraph('null'), secondary_graph=pGraph.PGraph('null'), parent=None, tab_name='Main'):
