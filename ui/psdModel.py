@@ -1,4 +1,5 @@
 import mix
+import maya.mel as mm
 
 import mix.ui.mainWindow
 reload(mix.ui.mainWindow)
@@ -67,9 +68,7 @@ def apply_pose(interp_graph, pose_graph):
         if len(geo) == 1:
             rig_psd.applyPose(interp, pose, bs, geo[0])
         else:
-            interp_name = rig_psd.getInterpNiceName(interp) + '_interp'
-            group_name = bs.replace('psd', 'grp')
-            geo_name = '{}|{}|{}'.format(group_name, interp_name, pose)
+            geo_name = get_pose_geo_path(bs, interp, pose)
             if mc.objExists(geo_name):
                 rig_psd.applyPose(interp, pose, bs, geo_name)
 
@@ -230,34 +229,64 @@ def enable_toggle(pose_graph):
 
 def duplicate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
+    dupes = []
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
         dup = rig_psd.duplicatePoseShape(interp, pose)
-        mc.hide(dup)
-        mc.select(dup)
+        dupes.append(dup)
         node.editOn()
+    if dupes:
+        attrs = ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz', 'v']
+        for dup in dupes:
+            for a in attrs:
+                mc.setAttr(dup+'.'+a, l=0)
+
+        mc.select(dupes)
 
 def isolate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
+    geos = []
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
         bs = rig_psd.getDeformer(interp)
         geo = get_pose_geo_path(bs, interp, pose)
+
         if mc.objExists(geo):
-            mc.select(geo)
-            currentPanel = getModelPanel()
-            currentState = mc.isolateSelect(currentPanel, query=True, state=True)
-            if currentState == 0:
-                mc.isolateSelect(currentPanel, state=1)
-                mc.isolateSelect(currentPanel, addSelected=True)
-                mc.showHidden(geo)
-            else:
-                set = mc.isolateSelect(currentPanel, viewObjects=1, q=1)
-                objs = mc.sets(set, q=1)
-                mc.isolateSelect(currentPanel, state=0)
-                mc.hide(objs)
+            geos.append(geo)
+
+    currentPanel = getModelPanel()
+
+    geos = mc.ls(geos)
+    if geos:
+        # Find the isolate set
+        obj_set = mc.isolateSelect(currentPanel, viewObjects=1, q=1)
+
+        # Remove objects in set
+        objs_in_set = []
+        if obj_set:
+            objs_in_set = mc.sets(obj_set, q=1) or []
+            mc.sets(clear=obj_set)
+            if objs_in_set:
+                mc.hide(objs_in_set)
+
+        # Clear isolate state
+        mc.isolateSelect(currentPanel, state=0)
+
+        # If the first geo is not in obj set, then isolate them
+        if geos[0] not in objs_in_set:
+            mc.isolateSelect(currentPanel, state=1)
+            obj_set = mc.isolateSelect(currentPanel, viewObjects=1, q=1)
+            if obj_set:
+                mc.sets(clear=obj_set)
+
+            mc.select(geos)
+            mc.isolateSelect(currentPanel, addSelected=1)
+            mc.showHidden(geos)
+
+    mc.isolateSelect(currentPanel, update=True)
+    mm.eval('updateModelPanelBar {}'.format(currentPanel))
 
 def getModelPanel():
     '''Return the active or first visible model panel.'''
