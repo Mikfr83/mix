@@ -37,6 +37,7 @@ import mix.ui.inputDialog
 reload(mix.ui.inputDialog)
 
 import maya.cmds as mc
+import math
 
 # Pointer to secondary update function
 update_secondary = None
@@ -176,6 +177,20 @@ def update_pose(pose_graph):
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
         rig_psd.updatePose(interp, pose)
+        # Update pose control data
+        #
+        pose_control_data = rig_psd.getPoseControlData(interp, pose)
+        if not pose_control_data:
+            continue
+        for data in pose_control_data:
+            name, type, value = data
+            value = mc.getAttr(name)
+
+            # Rotate
+            if type == 8:
+                # Convert degrees to radians
+                value = [math.radians(value[0][0]), math.radians(value[0][1]), math.radians(value[0][2])]
+                rig_psd.setPoseControlData(interp, pose, name, type, value)
     update_secondary()
 
 def sync_pose(pose_graph):
@@ -332,7 +347,6 @@ def build_interp_graph(interp_graph):
             interp_node.addAttribute('blendshape', bs)
 
     return (interp_graph)
-
 
 def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
     '''
