@@ -131,10 +131,11 @@ def add_pose(interp_graph, pose_graph):
             pose_name = rig_psd.addPose(interp, text)
             continue
 
-        target_name_list = rig_blendShape.getTargetNames(bs) or []
-        if text in target_name_list:
-            mc.warning('blendShape target with name  [ {}.{} ] already exists'.format(bs, text))
-            continue
+        if bs:
+            target_name_list = rig_blendShape.getTargetNames(bs) or []
+            if text in target_name_list:
+                mc.warning('blendShape target with name  [ {}.{} ] already exists'.format(bs, text))
+                continue
 
         print('[ {} ] Adding pose [ {} ]'.format(interp, text))
         pose_name = rig_psd.addPose(interp, text)
@@ -218,14 +219,17 @@ def mirror_delta(pose_graph):
         if restore_sculpt:
             mc.setToolTo('sculptMeshCacheContext')
 
-def activate_pose(pose_graph):
+def live_toggle(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     if sel_nodes:
         node = sel_nodes[0]
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
-        rig_psd.poseLiveOn(interp, pose)
-        pose_graph.setLiveNode(node)
+        state = rig_psd.poseLiveToggle(interp, pose)
+        if state:
+            pose_graph.setLiveNode(node)
+        else:
+            pose_graph.clearLiveNode()
 
 def enable_toggle(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -373,7 +377,7 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
     for i in range(len(node_list)):
         node = node_list[i]
         if node.getAttributeByName('blendshape'):
-            bs = node.getAttributeByName('blendshape').getValue()
+            bs = node.getAttributeByName('blendshape').getValue() or ''
         if node.getAttributeByName('full_name'):
             interp = node.getAttributeByName('full_name').getValue()
             # (PINGS MAYA)
@@ -499,7 +503,7 @@ def build_pose_graph(interp_graph, pose_graph):
     pose_graph.setRadialMenuList([
 
         {'position': 'E', 'text': 'Duplicate Shape', 'func': partial(duplicate_shape, pose_graph)},
-        {'position': 'N', 'text': 'Live Edit', 'func': partial(activate_pose, pose_graph)},
+        {'position': 'N', 'text': 'Live Edit', 'func': partial(live_toggle, pose_graph)},
         {'position': 'W', 'text': 'Enable Toggle', 'func': partial(enable_toggle, pose_graph)},
         {'position': 'S', 'text': 'Apply', 'func': partial(apply_pose, interp_graph, pose_graph)},
         {'position': 'NE', 'text': 'Mirror Deltas', 'func': partial(mirror_delta, pose_graph)},
