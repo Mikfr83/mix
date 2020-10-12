@@ -172,6 +172,33 @@ def rename_pose(interp_graph, pose_graph):
 
     update_secondary()
 
+
+def set_pose_falloff(interp_graph, pose_graph):
+    sel_nodes = pose_graph.getSelectedNodes()
+    if not sel_nodes:
+        return
+
+    # Get a pose default name to enter in the text
+    pose_name = sel_nodes[0].getAttributeByName('full_name').getValue()
+    interp = sel_nodes[0].getAttributeByName('interp').getValue()
+    value = str(rig_psd.getPoseFalloff(interp, pose_name))
+
+    text, ok = g_dialog.get_text('Pose Falloff', 'Set Pose Fallof:', value)
+    if not ok:
+        return
+
+    if not text:
+        return
+
+    for node in sel_nodes:
+        interp = node.getAttributeByName('interp').getValue()
+        pose = node.getAttributeByName('full_name').getValue()
+
+        print('Setting falloff for pose [ {} ] [ {} ] --> [ {} ] '.format(interp, pose, text))
+        rig_psd.setPoseFalloff(interp, pose, float(text))
+
+    update_secondary()
+
 def update_pose(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     for node in sel_nodes:
@@ -394,7 +421,11 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
                     pose_weight = '0.00'
 
                 pose_weight = '{0:>{1}}'.format(pose_weight, 5)
-                pose_data_list.append([pose_weight, pose, interp, bs])
+
+                # Get pose falloff
+                falloff = rig_psd.getPoseFalloff(interp, pose)
+                falloff = '{:.1f}'.format(round(falloff, 1))
+                pose_data_list.append([pose_weight, pose, falloff, interp, bs])
 
     if not pose_data_list:
         return(pose_graph)
@@ -452,7 +483,7 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
     # Create graph nodes
     #
     for i in range(len(pose_data_list_pair)):
-        pose_weight, pose, interp, bs = pose_data_list_pair[i]
+        pose_weight, pose, falloff, interp, bs = pose_data_list_pair[i]
 
         display_name = '  '.join(pose_data_list_justified[i])
         if 'neutral' in pose:
@@ -514,6 +545,7 @@ def build_pose_graph(interp_graph, pose_graph):
         {'position': '', 'text': 'Rename Pose', 'func': partial(rename_pose, interp_graph, pose_graph)},
         {'position': '', 'text': 'Delete Pose', 'func': partial(delete_pose, interp_graph, pose_graph)},
         {'position': '', 'text': '-------------', 'func': None},
+        {'position': '', 'text': 'Set Pose Falloff', 'func': partial(set_pose_falloff, interp_graph, pose_graph)},
         {'position': '', 'text': 'Sync Pose', 'func': partial(sync_pose, pose_graph)},
         {'position': '', 'text': 'Update Pose', 'func': partial(update_pose, pose_graph)},
         {'position': '', 'text': '-------------', 'func': None},
