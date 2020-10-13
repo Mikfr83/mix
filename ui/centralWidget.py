@@ -353,11 +353,16 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         '''
 
         indexes = self._secondary_setupTreeView.selectedIndexes()
+        seleced_indexes = []
         row = None
         column = None
         if indexes:
             row = indexes[0].row()
             column = indexes[0].column()
+        for index in indexes:
+            row = index.row()
+            column = index.column()
+            seleced_indexes.append((row, column))
 
         # Update the graph with the external call
         secondary_graph = self.update_secondary_graph()
@@ -370,10 +375,13 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         # Set model to the tree
         self._secondary_setupTreeView.setModel(self._secondary_model)
 
+        # Reselected the previously selected nodes if the row and column are still valid
         sel_model = self._secondary_setupTreeView.selectionModel()
-        index = self._secondary_model.index(row, column)
-        if index:
-            sel_model.select(index, QtCore.QItemSelectionModel.Select)
+        for index_data in seleced_indexes:
+            row, column = index_data
+            index = self._secondary_model.index(row, column)
+            if index:
+                sel_model.select(index, QtCore.QItemSelectionModel.Select)
 
 
     def _iterItems(self, root):

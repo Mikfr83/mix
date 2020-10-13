@@ -271,6 +271,7 @@ def enable_toggle(pose_graph):
             else:
                 node.enable()
                 rig_psd.enablePose(interp, pose)
+    update_secondary()
 
 
 def duplicate_shape(pose_graph):
@@ -512,9 +513,27 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
             pose_node.disable()
 
     for pose in neutrals:
-        pose_node = pose_graph.addNode(pose[0])
-        pose_node.addAttribute('interp', pose[2])
-        pose_node.addAttribute('full_name', pose[1])
+        display_name, pose, interp = pose
+        pose_node = pose_graph.addNode(display_name)
+        pose_node.addAttribute('interp', interp)
+        pose_node.addAttribute('full_name', pose)
+
+        # Live
+        if (bs, pose) in live_poses:
+            pose_graph.setLiveNode(pose_node)
+
+        # Duplicated (PING)
+        if rig_psd.getPoseShapes(interp, pose):
+            pose_node.editOn()
+        else:
+            pose_node.editOff()
+
+        # Disabled (PING)
+        #
+        if rig_psd.isEnabled(interp=interp, pose=pose):
+            pose_node.enable()
+        else:
+            pose_node.disable()
 
     return (pose_graph)
 
