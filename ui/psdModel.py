@@ -22,13 +22,13 @@ reload(pNode)
 import mix.ui.uGraph as uGraph
 reload(uGraph)
 
-import showtools.maya.core.psd as rig_psd
+import showtools.maya.psd as rig_psd
 reload(rig_psd)
 
-import showtools.maya.core.common as common
+import showtools.maya.common as common
 reload(common)
 
-import showtools.maya.core.blendShape as rig_blendShape
+import showtools.maya.blendShape as rig_blendShape
 reload(rig_blendShape)
 
 from functools import partial
