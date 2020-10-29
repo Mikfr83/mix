@@ -278,6 +278,12 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         self._model = layerGraphModel.LayerGraphModel(self._primary_graph)
         self._setupTreeView.setModel(self._model)
 
+        # clicked func
+        self._setupTreeView.clicked.connect(self.secondary_tree_clicked)
+
+        radial_menu_list = self._primary_graph.getRadialMenuList()
+        self.buildRadialContextMenu(self._setupTreeView, radial_menu_list)
+
     def set_secondary_graph(self, graph=pGraph.PGraph('null')):
         '''
         Set the primary graph with the passed graph
@@ -383,6 +389,41 @@ class CentralTabWidget(QtWidgets.QTabWidget):
             if index:
                 sel_model.select(index, QtCore.QItemSelectionModel.Select)
 
+    def update_primary(self):
+        '''
+        '''
+        indexes = self._setupTreeView.selectedIndexes()
+        seleced_indexes = []
+        row = None
+        column = None
+        if indexes:
+            row = indexes[0].row()
+            column = indexes[0].column()
+        for index in indexes:
+            row = index.row()
+            column = index.column()
+            seleced_indexes.append((row, column))
+
+        # Update the graph with the external call
+        primary_graph = self.update_primary_graph()
+        self._primary_graph = primary_graph
+        if not primary_graph:
+            return
+
+        # Build model
+        self._model = layerGraphModel.LayerGraphModel(self._primary_graph)
+        # Set model to the tree
+        self._setupTreeView.setModel(self._model)
+
+        # Reselected the previously selected nodes if the row and column are still valid
+        sel_model = self._setupTreeView.selectionModel()
+        for index_data in seleced_indexes:
+            row, column = index_data
+            index = self._model.index(row, column)
+            if index:
+                sel_model.select(index, QtCore.QItemSelectionModel.Select)
+
+        self._setupTreeView.expandAll()
 
     def _iterItems(self, root):
         if root is not None:
@@ -424,6 +465,11 @@ class CentralTabWidget(QtWidgets.QTabWidget):
     def secondary_tree_clicked(self):
         if self._secondary_graph.getClicked():
             clicked = self._secondary_graph.getClicked()
+            clicked()
+
+    def primary_tree_clicked(self):
+        if self._primary_graph.getClicked():
+            clicked = self._primary_graph.getClicked()
             clicked()
 
     def secondary_tree_double_clicked(self):

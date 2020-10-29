@@ -36,6 +36,9 @@ from functools import partial
 import mix.ui.inputDialog
 reload(mix.ui.inputDialog)
 
+import showtools.maya.attr as rig_attribute
+reload(rig_attribute)
+
 import maya.cmds as mc
 import math
 
@@ -43,6 +46,11 @@ import math
 update_secondary = None
 # Pointer to qDialog
 g_dialog = mix.ui.inputDialog.InputDialog()
+
+def interp_clicked(interp_graph):
+    '''
+    '''
+    sel_nodes = interp_graph.getSelectedNodes()
 
 def target_clicked(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -97,6 +105,130 @@ def delete_deltas(interp_graph, pose_graph):
         if mc.objExists(bs+'.'+pose):
             rig_blendShape.clearTargetDeltas(bs, pose)
 
+def add_interpolator(interp_graph):
+    '''
+    Add an interpolator to the the graph.
+
+    :pram interp_graph: The graph where the interpolators live
+    :type interp_graph: UGraph
+    '''
+    # get the selected nodes.
+    selected_node_list = interp_graph.getSelectedNodes()
+
+    # get the current group list to check against.
+    current_group_list = [mc.getAttr('{}.directoryName'.format(parent_attr)) for parent_attr in
+                          mc.ls('poseInterpolatorManager.poseInterpolatorDirectory[*]')]
+
+    # if there is a group selected we will
+    group_name = None
+    for node in selected_node_list:
+        # store the node name in a variable
+        node_name = node.getName()
+        full_name = node.getAttributeByName('full_name').getValue()
+        if node_name in current_group_list:
+            group_name = node_name
+            break
+        elif mc.nodeType(rig_psd.getInterp(full_name)) == 'poseInterpolator':
+            group_name = rig_psd.getGroup(rig_psd.getInterp(full_name))
+            break
+
+    # if no groups are selected we will punt and ask a user to select a group.
+    if not group_name:
+        print('Please select a group that so we can add the interpolator to it.')
+
+    # pull up the dialog box
+    text, ok = g_dialog.get_text('interpolator', 'Interpolator name:', "poseInterp")
+    if not ok:
+        return
+
+    interp_text = common.getValidName(text)
+    if not interp_text:
+        return
+    # Get all interps
+    interp_list = rig_psd.getGroupChildren(group_name)
+    def _getBlendShape(message):
+        # pull up the dialog box
+        text, ok = g_dialog.get_text('Blendshape', message, rig_psd.getDeformer(interp_list[0]))
+        if not ok:
+            return
+        if not text:
+            return _getBlendShape('Please do not leave text field empty.')
+        if not mc.objExists(text) or mc.nodeType(text) != 'blendShape':
+            return _getBlendShape('Blendshape {} does not exist. Please select one that exist in your Maya session.')
+
+        return text
+
+    blendshape_name = _getBlendShape('Select Blendshape:')
+    if not blendshape_name:
+        return
+    interp_name = '{}_poseInterpolator'.format(interp_text)
+    print('Adding Interpolator [ {} ]'.format(interp_text))
+    # create the interpolator and make the connection to the blendshape attribute
+    interp = rig_psd.addInterp(interp_name, group=group_name)
+    mc.connectAttr('{}.message'.format(blendshape_name), '{}.blendShape[0]'.format(interp), f=True)
+    # pull up the dialog box
+    group_node = interp_graph.getNodeByName(group_name)
+    interp_node = interp_graph.addNode(interp_text, group_node)
+    interp_node.addAttribute('full_name', interp)
+    interp_node.addAttribute('blendshape', blendshape_name)
+
+    update_primary()
+
+def add_driver(interp_graph):
+    '''
+    This will add drivers to the selected interpolator in the graph.
+
+    :pram interp_graph: The graph where the interpolators live
+    :type interp_graph: UGraph
+    '''
+    sel_nodes = interp_graph.getSelectedNodes()
+    if not sel_nodes:
+        return
+
+    driver_list = mc.ls(sl=True, type=['joint', 'transform'])
+
+    if not driver_list:
+        raise RuntimeError('Only joints can be drivers. Please select a joint you want to use as a driver.')
+
+    # Get a pose default name to enter in the text
+    interp = sel_nodes[0].getAttributeByName('full_name').getValue()
+    rig_psd.addDriver(interp, driver_list)
+
+def add_pose_control(interp_graph):
+    '''
+    This will add selected attributes as a pose control for the interpolator selected in the graph.
+
+    :pram interp_graph: The graph where the interpolators live
+    :type interp_graph: UGraph
+    '''
+    sel_nodes = interp_graph.getSelectedNodes()
+    for interp_node in sel_nodes:
+        selected_controls = mc.ls(sl=True)
+        selected_attributes = rig_attribute.get_selected_main_channel_box()
+        for control in selected_controls:
+            attr_list = list()
+            for attr in selected_attributes:
+                parent_attr = mc.attributeQuery(attr, node=control, lp=True)
+                if parent_attr:
+                    children_attr_list = [mc.attributeQuery(child_attr, node=control, sn=True) for child_attr in
+                                          mc.attributeQuery(parent_attr, node=control, lc=True)]
+                    if children_attr_list:
+                        combine = True
+                        for child_attr in children_attr_list:
+                            child_attr = mc.attributeQuery(child_attr, node=control, sn=True)
+                            if child_attr not in selected_attributes:
+                                combine = False
+                        if combine:
+                            selected_attributes = list(set(selected_attributes).difference(set(children_attr_list)))
+                            if not parent_attr in selected_attributes:
+                                selected_attributes.append(mc.attributeQuery(parent_attr, node=control, sn=True))
+
+            control_attributes = ['{}.{}'.format(control, attribute) for attribute in selected_attributes]
+            for attr in control_attributes:
+                interp = interp_node.getAttributeByName('full_name').getValue()
+                print interp, control_attributes
+                rig_psd.addPoseControl(interp, control_attributes)
+
 def add_pose(interp_graph, pose_graph):
     sel_nodes = interp_graph.getSelectedNodes()
     if not sel_nodes:
@@ -125,8 +257,7 @@ def add_pose(interp_graph, pose_graph):
         if text in pose_name_list:
             mc.warning('[ {} ] Interp pose with name  [ {} ] already exists'.format(interp, text))
             continue
-
-        if 'neutral' in pose_name:
+        if 'neutral' in text:
             print('[ {} ] Adding neutral pose  [ {} ]'.format(interp, text))
             pose_name = rig_psd.addPose(interp, text)
             continue
@@ -139,6 +270,7 @@ def add_pose(interp_graph, pose_graph):
 
         print('[ {} ] Adding pose [ {} ]'.format(interp, text))
         pose_name = rig_psd.addPose(interp, text)
+        print interp, text, bs
         rig_psd.addShape(interp, text, bs=bs)
 
     update_secondary()
@@ -360,6 +492,9 @@ def getModelPanels():
 def build_interp_graph(interp_graph):
     interp_graph.clearNodes()
 
+    # Connect Click functions
+    interp_graph.setClicked(partial(interp_clicked, interp_graph))
+
     # Group loop
     psd_group_list = rig_psd.getAllGroups()
     for psd_group in psd_group_list:
@@ -377,6 +512,21 @@ def build_interp_graph(interp_graph):
             interp_node.addAttribute('full_name', interp)
             bs = rig_psd.getDeformer(interp)
             interp_node.addAttribute('blendshape', bs)
+
+    # Radial menu Setup
+    interp_graph.setRadialMenuList([
+        {'position': 'N', 'text': 'Add Interpolator', 'func': partial(add_interpolator, interp_graph)},
+        {'position': 'NE', 'text': 'Add Driver', 'func': partial(add_driver, interp_graph)},
+        {'position': 'NW', 'text': 'Add Pose Control', 'func': partial(add_pose_control, interp_graph)},
+    ])
+    '''
+        {'position': 'N', 'text': 'Add Drivers', 'func': partial(enable_toggle, interp_graph)},
+        {'position': 'W', 'text': 'Add Pose Controls', 'func': partial(enable_toggle, interp_graph)},
+        {'position': 'S', 'text': 'Apply', 'func': partial(apply_pose, interp_graph, interp_graph)},
+        {'position': 'NE', 'text': 'Mirror Deltas', 'func': partial(mirror_delta, interp_graph)},
+        {'position': 'SE', 'text': 'Isolate Toggle', 'func': partial(isolate_shape, interp_graph)},
+        {'position': '', 'text': 'Delete Deltas', 'func': partial(isolate_shape, interp_graph)},
+    ])'''
 
     return (interp_graph)
 
@@ -591,6 +741,7 @@ def secondary_tree_selection_change(pose_graph):
 
 def launch():
     global update_secondary
+    global update_primary
     # Build graphs that all specific deformer functions will talk to
     pose_graph = uGraph.UGraph('Poses')
     interp_graph = uGraph.UGraph('Interps')
@@ -607,6 +758,7 @@ def launch():
     mix_win.centralWidget.refresh_secondary_graph = partial(secondary_tree_selection_change, pose_graph)
 
     update_secondary = mix_win.centralWidget.update_secondary
+    update_primary = mix_win.centralWidget.update_primary
 
 
 '''
