@@ -92,6 +92,7 @@ def set_all_neutral(interp_graph):
     '''
     Will set all interpolator neutral poses to get to the default state of the character.
     '''
+    mc.undoInfo(openChunk=1)
     node_list = interp_graph.getNodes()
 
     for node in node_list:
@@ -100,12 +101,13 @@ def set_all_neutral(interp_graph):
             interp_list = mc.ls(full_name_attr.getValue())
             if interp_list:
                 rig_psd.goToNeutralPose(interp_list)
-
+    mc.undoInfo(closeChunk=1)
 
 def delete_interpolator(interp_graph):
     '''
     This will delete the selected interpolators from the maya session.
     '''
+    mc.undoInfo(openChunk=1)
     selected_node_list = interp_graph.getSelectedNodes()
     if not selected_node_list:
         return
@@ -117,8 +119,10 @@ def delete_interpolator(interp_graph):
         mc.delete(mc.listRelatives(interp, p=True)[0])
 
     update_primary()
+    mc.undoInfo(closeChunk=1)
 
 def delete_pose(interp_graph, pose_graph):
+    mc.undoInfo(openChunk=1)
     sel_nodes = pose_graph.getSelectedNodes()
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
@@ -126,8 +130,10 @@ def delete_pose(interp_graph, pose_graph):
         rig_psd.deletePose(interp, pose)
 
     update_secondary()
+    mc.undoInfo(closeChunk=1)
 
 def delete_deltas(interp_graph, pose_graph):
+    mc.undoInfo(openChunk=1)
     sel_nodes = pose_graph.getSelectedNodes()
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
@@ -135,6 +141,7 @@ def delete_deltas(interp_graph, pose_graph):
         bs = rig_psd.getDeformer(interp)
         if mc.objExists(bs+'.'+pose):
             rig_blendShape.clearTargetDeltas(bs, pose)
+    mc.undoInfo(closeChunk=1)
 
 def add_interpolator(interp_graph):
     '''
@@ -143,6 +150,7 @@ def add_interpolator(interp_graph):
     :pram interp_graph: The graph where the interpolators live
     :type interp_graph: UGraph
     '''
+    mc.undoInfo(openChunk=1)
     # get the selected nodes.
     selected_node_list = interp_graph.getSelectedNodes()
 
@@ -204,6 +212,7 @@ def add_interpolator(interp_graph):
     interp_node.addAttribute('blendshape', blendshape_name)
 
     update_primary()
+    mc.undoInfo(closeChunk=1)
 
 def add_driver(interp_graph):
     '''
@@ -212,6 +221,7 @@ def add_driver(interp_graph):
     :pram interp_graph: The graph where the interpolators live
     :type interp_graph: UGraph
     '''
+    mc.undoInfo(openChunk=1)
     sel_nodes = interp_graph.getSelectedNodes()
     if not sel_nodes:
         return
@@ -224,6 +234,7 @@ def add_driver(interp_graph):
     # Get a pose default name to enter in the text
     interp = sel_nodes[0].getAttributeByName('full_name').getValue()
     rig_psd.addDriver(interp, driver_list)
+    mc.undoInfo(closeChunk=1)
 
 def add_pose_control(interp_graph):
     '''
@@ -232,6 +243,7 @@ def add_pose_control(interp_graph):
     :pram interp_graph: The graph where the interpolators live
     :type interp_graph: UGraph
     '''
+    mc.undoInfo(openChunk=1)
     sel_nodes = interp_graph.getSelectedNodes()
     for interp_node in sel_nodes:
         selected_controls = mc.ls(sl=True)
@@ -271,6 +283,7 @@ def add_pose_control(interp_graph):
                 if mc.attributeQuery(attr_name, node=node_name, at=True) == 'double3':
                     attr_value = attr_value[0]
                 rig_psd.setPoseControlData(interp, pose, control_attr, attr_value)
+    mc.undoInfo(closeChunk=1)
 
 def add_pose(interp_graph, pose_graph):
     sel_nodes = interp_graph.getSelectedNodes()
@@ -397,6 +410,7 @@ def enable_interpolator_toggle(interp_graph):
     '''
 
     '''
+    mc.undoInfo(openChunk=1)
     sel_nodes = interp_graph.getSelectedNodes()
     if sel_nodes:
         for node in sel_nodes:
@@ -419,6 +433,7 @@ def enable_interpolator_toggle(interp_graph):
                     mc.setAttr('{}.enabled'.format(interp), True)
     update_primary()
     update_secondary()
+    mc.undoInfo(closeChunk=1)
 def update_pose(pose_graph):
     '''
     This will update the selected poses with whatever the controls that are pose controls on the interpolator.
