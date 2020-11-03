@@ -378,7 +378,11 @@ def select_drivers(interp_graph):
         return
 
     # select the nodes
-    mc.select(mc.ls([rig_psd.getDrivers(node.getAttributeByName('full_name').getValue()) for node in selected_node_list]))
+    driver_list = list()
+    for node in selected_node_list:
+        driver_list.extend(rig_psd.getDrivers(node.getAttributeByName('full_name').getValue()))
+
+    mc.select(mc.ls(driver_list))
 
 def set_pose_falloff(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
