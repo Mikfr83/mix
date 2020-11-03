@@ -424,6 +424,8 @@ class CentralTabWidget(QtWidgets.QTabWidget):
     def primary_tree_clicked(self):
         # Update selected nodes on primary graph
         clicked = self._primary_graph.getClicked()
+        nodes = self._selectedNodeList(self._setupTreeView, self._model)
+        self._primary_graph.setSelectedNodes(nodes)
         if clicked:
             clicked()
 
