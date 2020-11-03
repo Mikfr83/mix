@@ -15,7 +15,7 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         super(CentralTabWidget, self).__init__(parent)
         self._primary_graph = primary_graph
         self._secondary_graph = secondary_graph
-        
+
         # -------------------------------------------------
         # SETUP TAB
         # -------------------------------------------------
@@ -37,18 +37,16 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         # ------------------------------------------------
         # Secondary Tree
         # ------------------------------------------------
-        secondary_setupWidget = QtWidgets.QWidget()
         self._secondary_setupWidgetLayout = QtWidgets.QHBoxLayout()
-        self._secondary_setupTreeFilter = QtWidgets.QLineEdit()
         self._secondary_setupTreeView = layerGraphTreeView.LayerGraphTreeView()
         self._secondary_setupTreeView.setAlternatingRowColors(True)
         self._secondary_setupTreeView.setDragEnabled(True)
         self._secondary_setupTreeView.setExpandsOnDoubleClick(True)
         self._secondary_setupTreeView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        
+
         #file view
         #self._fileView = widgets.FileView()
-        
+
         #fields
         # self._setupAttrsWidget = QtWidgets.QFrame()
         # self._setupAttrsLayout = QtWidgets.QVBoxLayout(self._setupAttrsWidget)
@@ -98,47 +96,6 @@ class CentralTabWidget(QtWidgets.QTabWidget):
                 node.enable()
             else:
                 node.disable()
-
-    def _executeSelectedNode(self, *args):
-        '''
-        Runs the selected item in the setup view
-        '''
-        node = self._selectedNode()
-        attributes = dict()
-
-        if node:
-            node.execute()
-
-    def _executeAllNodes(self, *args):
-        '''
-        Will execute the entire graph.
-        '''
-        nodeList = self._primary_graph.getNodes()
-
-        self._executeFromNode(nodeList[0])
-
-    def _executeFromNode(self, *args):
-        '''
-        Will execute the current node and every node that is a descendant of that node
-        '''
-        node = self._selectedNode()
-        if args:
-            if isinstance(args[0], pNode.PNode):
-                node = args[0]
-        node.execute()
-        nodeList = list(node.descendants())
-
-        for node in nodeList:
-            if not node.isActive():
-                nodeIndex = nodeList.index(node)
-                childList = node.descendants()
-                for child in childList:
-                    nodeList.pop(nodeIndex+1)
-                nodeList.pop(nodeIndex)
-
-        for node in nodeList:
-            if node.isActive():
-                node.execute()
 
     def _selectedNode(self):
         '''
@@ -279,7 +236,7 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         self._setupTreeView.setModel(self._model)
 
         # clicked func
-        self._setupTreeView.clicked.connect(self.secondary_tree_clicked)
+        self._setupTreeView.clicked.connect(self.primary_tree_clicked)
 
         radial_menu_list = self._primary_graph.getRadialMenuList()
         self.buildRadialContextMenu(self._setupTreeView, radial_menu_list)
@@ -327,7 +284,6 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         :return:
         '''
         pass
-
 
     def refresh_secondary_graph(self):
         '''
@@ -393,7 +349,7 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         '''
         '''
         indexes = self._setupTreeView.selectedIndexes()
-        seleced_indexes = []
+        selected_indexes = []
         row = None
         column = None
         if indexes:
@@ -402,7 +358,7 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         for index in indexes:
             row = index.row()
             column = index.column()
-            seleced_indexes.append((row, column))
+            selected_indexes.append((row, column))
 
         # Update the graph with the external call
         primary_graph = self.update_primary_graph()
@@ -417,7 +373,7 @@ class CentralTabWidget(QtWidgets.QTabWidget):
 
         # Reselected the previously selected nodes if the row and column are still valid
         sel_model = self._setupTreeView.selectionModel()
-        for index_data in seleced_indexes:
+        for index_data in selected_indexes:
             row, column = index_data
             index = self._model.index(row, column)
             if index:
@@ -441,18 +397,16 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         '''
         Populates the secondary tree
         '''
-
-        # Update selected nodes on primary graph
+        # Update the graph
         nodes = self._selectedNodeList(self._setupTreeView, self._model)
         self._primary_graph.setSelectedNodes(nodes)
-
-        # Update the graph
         self.update_secondary_graph()
         if not self._secondary_graph:
             return
 
         # Build the model
         self._secondary_model = layerGraphModel.LayerGraphModel(self._secondary_graph)
+
         # Set the model to the tree
         self._secondary_setupTreeView.setModel(self._secondary_model)
 
@@ -463,13 +417,14 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         self.refresh_secondary_graph()
 
     def secondary_tree_clicked(self):
-        if self._secondary_graph.getClicked():
-            clicked = self._secondary_graph.getClicked()
+        clicked = self._secondary_graph.getClicked()
+        if clicked:
             clicked()
 
     def primary_tree_clicked(self):
-        if self._primary_graph.getClicked():
-            clicked = self._primary_graph.getClicked()
+        # Update selected nodes on primary graph
+        clicked = self._primary_graph.getClicked()
+        if clicked:
             clicked()
 
     def secondary_tree_double_clicked(self):

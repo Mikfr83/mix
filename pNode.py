@@ -114,7 +114,6 @@ class PNode(pObject.PObject):
         else:
             return "|".join(["|{}".format(self.getName())])
 
-
     def attributeAtIndex(self, index = None):
         '''
         Returns the attribute at the index given.

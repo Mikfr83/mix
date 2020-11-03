@@ -9,6 +9,7 @@ from mix.ui import layerGraphModel
 import mix.pGraph as pGraph
 import mix.ui.uGraph as uGraph
 import mix.ui.centralWidget as centralWidget
+reload(centralWidget)
 #-------------------------------
 #MAIN WINDOW
 #-------------------------------

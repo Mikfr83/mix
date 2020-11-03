@@ -28,8 +28,16 @@ class LayerGraphTreeView(QtWidgets.QTreeView):
     def pSelectionChanged(self):
         pass
 
+    def pSelectionMade(self):
+        pass
+
     def mouseReleaseEvent(self, event):
         super(LayerGraphTreeView, self).mouseReleaseEvent(event)
         self.pSelectionChanged()
         return(event)
+
+    def mousePressEvent(self, event):
+        super(LayerGraphTreeView, self).mousePressEvent(event)
+        self.pSelectionMade()
+        return (event)
 
