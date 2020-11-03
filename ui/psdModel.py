@@ -99,7 +99,7 @@ def set_all_neutral(interp_graph):
         if full_name_attr:
             interp_list = mc.ls(full_name_attr.getValue())
             if interp_list:
-                rig_psd.goToNeutralPose(interp_list[0])
+                rig_psd.goToNeutralPose(interp_list)
 
 
 def delete_interpolator(interp_graph):
@@ -671,6 +671,7 @@ def build_interp_graph(interp_graph):
         {'position': 'N', 'text': 'Add Interpolator', 'func': partial(add_interpolator, interp_graph)},
         {'position': 'NE', 'text': 'Add Driver', 'func': partial(add_driver, interp_graph)},
         {'position': 'W', 'text': 'Enable Toggle', 'func': partial(enable_interpolator_toggle, interp_graph)},
+        {'position': 'E', 'text': 'All Neutral Pose', 'func': partial(set_all_neutral, interp_graph)},
         {'position': 'NW', 'text': 'Add Pose Control', 'func': partial(add_pose_control, interp_graph)},
         {'position': 'S', 'text': 'Select Interpolator', 'func': partial(select_interpolator, interp_graph)},
         {'position': 'SW', 'text': 'Select Drivers', 'func': partial(select_drivers, interp_graph)},
