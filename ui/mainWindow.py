@@ -16,6 +16,7 @@ reload(centralWidget)
 class MainWindow(QtWidgets.QWidget):
     _initialized = None
     _instance = None
+    """
     def __new__(cls,*args,**kwargs):
         '''
         Creates a new instance of this object.
@@ -24,6 +25,7 @@ class MainWindow(QtWidgets.QWidget):
             MainWindow._instance = QtWidgets.QWidget.__new__(cls)
 
         return MainWindow._instance
+    """
 
     def __del__(self):
         '''
@@ -42,10 +44,11 @@ class MainWindow(QtWidgets.QWidget):
         :param parent: The parent for the ui
         :type parent: QtGui.QWidget
         '''
-        
+
         if not MainWindow._initialized:
             super(MainWindow, self).__init__(parent)
             MainWindow._initialized = True
+            MainWindow._instance = self
             #load in the style sheet
             
             #set the window title and central widget

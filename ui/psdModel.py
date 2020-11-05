@@ -248,27 +248,11 @@ def add_pose_control(interp_graph):
     for interp_node in sel_nodes:
         selected_controls = mc.ls(sl=True)
         selected_attributes = rig_attribute.get_selected_main_channel_box()
+        # get the interp
         interp = interp_node.getAttributeByName('full_name').getValue()
+        # loop through the selected controls
         for control in selected_controls:
-            for attr in selected_attributes:
-                if not mc.objExists('{}.{}'.format(control, attr)):
-                    continue
-                parent_attr = mc.attributeQuery(attr, node=control, lp=True)
-                if parent_attr:
-                    children_attr_list = [mc.attributeQuery(child_attr, node=control, sn=True) for child_attr in
-                                          mc.attributeQuery(parent_attr, node=control, lc=True)]
-                    if children_attr_list:
-                        combine = True
-                        for child_attr in children_attr_list:
-                            child_attr = mc.attributeQuery(child_attr, node=control, sn=True)
-                            if child_attr not in selected_attributes:
-                                combine = False
-                        if combine:
-                            selected_attributes = list(set(selected_attributes).difference(set(children_attr_list)))
-                            if not parent_attr in selected_attributes:
-                                selected_attributes.append(mc.attributeQuery(parent_attr, node=control, sn=True))
-
-            control_attr_list = ['{}.{}'.format(control, mc.attributeQuery(attribute, node=control, ln=True)) for attribute in selected_attributes if mc.objExists('{}.{}'.format(control, attribute))]
+            control_attr_list = rig_attribute.get_resolved_attributes(control, selected_attributes)
             rig_psd.addPoseControl(interp, control_attr_list)
         pose_names = rig_psd.getPoseNames(interp) or []
         # go through each existing pose and make sure that the pose information is updated.
@@ -283,6 +267,7 @@ def add_pose_control(interp_graph):
                 if mc.attributeQuery(attr_name, node=node_name, at=True) == 'double3':
                     attr_value = attr_value[0]
                 rig_psd.setPoseControlData(interp, pose, control_attr, attr_value)
+
     mc.undoInfo(closeChunk=1)
 
 def add_pose(interp_graph, pose_graph):
@@ -438,6 +423,7 @@ def enable_interpolator_toggle(interp_graph):
     update_primary()
     update_secondary()
     mc.undoInfo(closeChunk=1)
+
 def update_pose(pose_graph):
     '''
     This will update the selected poses with whatever the controls that are pose controls on the interpolator.
@@ -895,8 +881,6 @@ def secondary_tree_selection_change(pose_graph):
 
     if shape_list:
         mc.select(shape_list)
-
-
 
 def launch():
     global update_secondary
