@@ -16,6 +16,8 @@ reload(centralWidget)
 class MainWindow(QtWidgets.QWidget):
     _initialized = None
     _instance = None
+    # commenting this out until Maya updates pySide with the fix made. https://bugreports.qt.io/browse/PYSIDE-1051
+    """
     def __new__(cls,*args,**kwargs):
         '''
         Creates a new instance of this object.
@@ -24,7 +26,7 @@ class MainWindow(QtWidgets.QWidget):
             MainWindow._instance = QtWidgets.QWidget.__new__(cls)
 
         return MainWindow._instance
-
+    """
     def __del__(self):
         '''
         Destructor method. Restting the class attributes and destroying thte window.
@@ -46,6 +48,7 @@ class MainWindow(QtWidgets.QWidget):
         if not MainWindow._initialized:
             super(MainWindow, self).__init__(parent)
             MainWindow._initialized = True
+            MainWindow._instance = self
             #load in the style sheet
             
             #set the window title and central widget

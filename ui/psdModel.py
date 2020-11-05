@@ -2,41 +2,53 @@ import mix
 import maya.mel as mm
 
 import mix.ui.mainWindow
+
 reload(mix.ui.mainWindow)
 
 import mix.ui.centralWidget
+
 reload(mix.ui.centralWidget)
 
 import mix.ui.layerGraphTreeView
+
 reload(mix.ui.layerGraphTreeView)
 
 import mix.ui.layerGraphModel
+
 reload(mix.ui.layerGraphModel)
 
 import mix.pGraph as pGraph
+
 reload(pGraph)
 
 import mix.pNode as pNode
+
 reload(pNode)
 
 import mix.ui.uGraph as uGraph
+
 reload(uGraph)
 
 import showtools.maya.psd as rig_psd
+
 reload(rig_psd)
 
 import showtools.maya.common as common
+
 reload(common)
 
 import showtools.maya.blendShape as rig_blendShape
+
 reload(rig_blendShape)
 
 from functools import partial
 
 import mix.ui.inputDialog
+
 reload(mix.ui.inputDialog)
 
 import showtools.maya.attr as rig_attribute
+
 reload(rig_attribute)
 
 import maya.cmds as mc
@@ -47,14 +59,17 @@ update_secondary = None
 # Pointer to qDialog
 g_dialog = mix.ui.inputDialog.InputDialog()
 
+
 def interp_clicked(interp_graph):
     '''
     '''
     view_pose_controls(interp_graph)
     view_drivers(interp_graph)
 
+
 def target_clicked(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
+
 
 def target_double_clicked(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -64,6 +79,7 @@ def target_double_clicked(pose_graph):
         pose = node.getAttributeByName('full_name').getValue()
         rig_psd.goToPose(interp, pose)
     update_secondary()
+
 
 def apply_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -82,11 +98,13 @@ def apply_pose(interp_graph, pose_graph):
             if mc.objExists(geo_name):
                 rig_psd.applyPose(interp, pose, bs, geo_name)
 
+
 def get_pose_geo_path(bs, interp, pose):
     interp_name = rig_psd.getInterpNiceName(interp) + '_interp'
     group_name = bs.replace('psd', 'grp')
     full_path = '{}|{}|{}'.format(group_name, interp_name, pose)
-    return(full_path)
+    return (full_path)
+
 
 def set_all_neutral(interp_graph):
     '''
@@ -102,6 +120,7 @@ def set_all_neutral(interp_graph):
             if interp_list:
                 rig_psd.goToNeutralPose(interp_list)
     mc.undoInfo(closeChunk=1)
+
 
 def delete_interpolator(interp_graph):
     '''
@@ -121,6 +140,7 @@ def delete_interpolator(interp_graph):
     update_primary()
     mc.undoInfo(closeChunk=1)
 
+
 def delete_pose(interp_graph, pose_graph):
     mc.undoInfo(openChunk=1)
     sel_nodes = pose_graph.getSelectedNodes()
@@ -132,6 +152,7 @@ def delete_pose(interp_graph, pose_graph):
     update_secondary()
     mc.undoInfo(closeChunk=1)
 
+
 def delete_deltas(interp_graph, pose_graph):
     mc.undoInfo(openChunk=1)
     sel_nodes = pose_graph.getSelectedNodes()
@@ -139,9 +160,10 @@ def delete_deltas(interp_graph, pose_graph):
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
         bs = rig_psd.getDeformer(interp)
-        if mc.objExists(bs+'.'+pose):
+        if mc.objExists(bs + '.' + pose):
             rig_blendShape.clearTargetDeltas(bs, pose)
     mc.undoInfo(closeChunk=1)
+
 
 def add_interpolator(interp_graph):
     '''
@@ -185,6 +207,7 @@ def add_interpolator(interp_graph):
         return
     # Get all interps
     interp_list = rig_psd.getGroupChildren(group_name)
+
     def _getBlendShape(message):
         # pull up the dialog box
         text, ok = g_dialog.get_text('Blendshape', message, rig_psd.getDeformer(interp_list[0]))
@@ -214,6 +237,7 @@ def add_interpolator(interp_graph):
     update_primary()
     mc.undoInfo(closeChunk=1)
 
+
 def add_driver(interp_graph):
     '''
     This will add drivers to the selected interpolator in the graph.
@@ -236,6 +260,7 @@ def add_driver(interp_graph):
     rig_psd.addDriver(interp, driver_list)
     mc.undoInfo(closeChunk=1)
 
+
 def add_pose_control(interp_graph):
     '''
     This will add selected attributes as a pose control for the interpolator selected in the graph.
@@ -248,27 +273,11 @@ def add_pose_control(interp_graph):
     for interp_node in sel_nodes:
         selected_controls = mc.ls(sl=True)
         selected_attributes = rig_attribute.get_selected_main_channel_box()
+        # get the interp
         interp = interp_node.getAttributeByName('full_name').getValue()
+        # loop through the selected controls
         for control in selected_controls:
-            for attr in selected_attributes:
-                if not mc.objExists('{}.{}'.format(control, attr)):
-                    continue
-                parent_attr = mc.attributeQuery(attr, node=control, lp=True)
-                if parent_attr:
-                    children_attr_list = [mc.attributeQuery(child_attr, node=control, sn=True) for child_attr in
-                                          mc.attributeQuery(parent_attr, node=control, lc=True)]
-                    if children_attr_list:
-                        combine = True
-                        for child_attr in children_attr_list:
-                            child_attr = mc.attributeQuery(child_attr, node=control, sn=True)
-                            if child_attr not in selected_attributes:
-                                combine = False
-                        if combine:
-                            selected_attributes = list(set(selected_attributes).difference(set(children_attr_list)))
-                            if not parent_attr in selected_attributes:
-                                selected_attributes.append(mc.attributeQuery(parent_attr, node=control, sn=True))
-
-            control_attr_list = ['{}.{}'.format(control, mc.attributeQuery(attribute, node=control, ln=True)) for attribute in selected_attributes if mc.objExists('{}.{}'.format(control, attribute))]
+            control_attr_list = rig_attribute.get_resolved_attributes(control, selected_attributes)
             rig_psd.addPoseControl(interp, control_attr_list)
         pose_names = rig_psd.getPoseNames(interp) or []
         # go through each existing pose and make sure that the pose information is updated.
@@ -283,7 +292,9 @@ def add_pose_control(interp_graph):
                 if mc.attributeQuery(attr_name, node=node_name, at=True) == 'double3':
                     attr_value = attr_value[0]
                 rig_psd.setPoseControlData(interp, pose, control_attr, attr_value)
+
     mc.undoInfo(closeChunk=1)
+
 
 def add_pose(interp_graph, pose_graph):
     sel_nodes = interp_graph.getSelectedNodes()
@@ -330,6 +341,7 @@ def add_pose(interp_graph, pose_graph):
 
     update_secondary()
 
+
 def rename_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     if not sel_nodes:
@@ -337,7 +349,6 @@ def rename_pose(interp_graph, pose_graph):
 
     # Get a pose default name to enter in the text
     pose_name = sel_nodes[0].getAttributeByName('full_name').getValue()
-
 
     text, ok = g_dialog.get_text('Rename Pose', 'Pose name:', pose_name)
     if not ok:
@@ -359,6 +370,7 @@ def rename_pose(interp_graph, pose_graph):
 
     update_secondary()
 
+
 def select_interpolator(interp_graph):
     '''
     This will select the interpolators you have selected in the graph
@@ -368,6 +380,7 @@ def select_interpolator(interp_graph):
         return
     # select the nodes
     mc.select(mc.ls([node.getAttributeByName('full_name').getValue() for node in selected_node_list]))
+
 
 def select_drivers(interp_graph):
     '''
@@ -383,6 +396,7 @@ def select_drivers(interp_graph):
         driver_list.extend(rig_psd.getDrivers(node.getAttributeByName('full_name').getValue()))
 
     mc.select(mc.ls(driver_list))
+
 
 def set_pose_falloff(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -409,6 +423,7 @@ def set_pose_falloff(interp_graph, pose_graph):
         rig_psd.setPoseFalloff(interp, pose, float(text))
 
     update_secondary()
+
 
 def enable_interpolator_toggle(interp_graph):
     '''
@@ -438,6 +453,8 @@ def enable_interpolator_toggle(interp_graph):
     update_primary()
     update_secondary()
     mc.undoInfo(closeChunk=1)
+
+
 def update_pose(pose_graph):
     '''
     This will update the selected poses with whatever the controls that are pose controls on the interpolator.
@@ -452,6 +469,7 @@ def update_pose(pose_graph):
         rig_psd.updatePose(interp, pose)
     update_secondary()
 
+
 def sync_pose(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     for node in sel_nodes:
@@ -460,6 +478,7 @@ def sync_pose(pose_graph):
         rig_psd.goToPose(interp, pose)
         rig_psd.updatePose(interp, pose)
     update_secondary()
+
 
 def mirror_delta(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -477,6 +496,7 @@ def mirror_delta(pose_graph):
         if restore_sculpt:
             mc.setToolTo('sculptMeshCacheContext')
 
+
 def live_toggle(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     if sel_nodes:
@@ -488,6 +508,7 @@ def live_toggle(pose_graph):
             pose_graph.setLiveNode(node)
         else:
             pose_graph.clearLiveNode()
+
 
 def enable_toggle(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -504,6 +525,7 @@ def enable_toggle(pose_graph):
                 rig_psd.enablePose(interp, pose)
     update_secondary()
 
+
 def duplicate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     dupes = []
@@ -517,9 +539,10 @@ def duplicate_shape(pose_graph):
         attrs = ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz', 'v']
         for dup in dupes:
             for a in attrs:
-                mc.setAttr(dup+'.'+a, l=0)
+                mc.setAttr(dup + '.' + a, l=0)
 
         mc.select(dupes)
+
 
 def isolate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -565,6 +588,7 @@ def isolate_shape(pose_graph):
     mc.isolateSelect(currentPanel, update=True)
     mm.eval('updateModelPanelBar {}'.format(currentPanel))
 
+
 def getModelPanel():
     '''Return the active or first visible model panel.'''
 
@@ -579,6 +603,7 @@ def getModelPanel():
 
     return panel
 
+
 def getModelPanels():
     '''Return all the model panels visible so you can operate on them.'''
     panels = []
@@ -586,6 +611,7 @@ def getModelPanels():
         if mc.getPanel(typeOf=p) == 'modelPanel':
             panels.append(p)
     return panels
+
 
 # these are temporary functions
 def view_drivers(interp_graph, show=False):
@@ -613,6 +639,7 @@ def view_drivers(interp_graph, show=False):
     else:
         driver_widget.repaint()
 
+
 def view_pose_controls(interp_graph, show=False):
     '''
     show the selected drivers using a list view
@@ -635,6 +662,7 @@ def view_pose_controls(interp_graph, show=False):
         pose_control_widget.show()
     else:
         pose_control_widget.repaint()
+
 
 def build_interp_graph(interp_graph):
     interp_graph.clearNodes()
@@ -684,6 +712,7 @@ def build_interp_graph(interp_graph):
 
     return (interp_graph)
 
+
 def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
     '''
 
@@ -724,7 +753,6 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
                 pose_weight = rig_psd.getPoseWeight(interp, pose)
                 pose_weight = '{:.2f}'.format(round(pose_weight, 2))
 
-
                 if pose_weight == '-0.00':
                     pose_weight = '0.00'
 
@@ -736,7 +764,7 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
                 pose_data_list.append([pose_weight, pose, falloff, interp, bs])
 
     if not pose_data_list:
-        return(pose_graph)
+        return (pose_graph)
 
     # Sort by name
     pose_data_list.sort(key=lambda p: p[1])
@@ -783,7 +811,6 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
         else:
             if not right_left_found:
                 pose_data_list_pair.append(pose_data_list[i])
-
 
     # justify for row column display
     pose_data_list_justified = common.justify_list_items(pose_data_list_pair)
@@ -844,6 +871,7 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
 
     return (pose_graph)
 
+
 def build_pose_graph(interp_graph, pose_graph):
     '''
 
@@ -878,10 +906,10 @@ def build_pose_graph(interp_graph, pose_graph):
 
     ])
 
-
     # Live status
 
     return (pose_graph)
+
 
 def secondary_tree_selection_change(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -895,7 +923,6 @@ def secondary_tree_selection_change(pose_graph):
 
     if shape_list:
         mc.select(shape_list)
-
 
 
 def launch():
@@ -943,7 +970,7 @@ LayerGraphTreeView.pSelectionChanged
             centralWidget.update_secondary_graph()
                 psdModel.refresh_pose_graph
             centralWidget.update_secondary_graph()
-    
+
     psdModel.refresh_pose_graph
         centralWidget.update_secondary_graph
 '''
