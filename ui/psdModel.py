@@ -103,8 +103,7 @@ def get_pose_geo_path(bs, interp, pose):
     interp_name = rig_psd.getInterpNiceName(interp) + '_interp'
     group_name = bs.replace('psd', 'grp')
     full_path = '{}|{}|{}'.format(group_name, interp_name, pose)
-    return (full_path)
-
+    return(full_path)
 
 def set_all_neutral(interp_graph):
     '''
@@ -160,7 +159,7 @@ def delete_deltas(interp_graph, pose_graph):
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
         bs = rig_psd.getDeformer(interp)
-        if mc.objExists(bs + '.' + pose):
+        if mc.objExists(bs+'.'+pose):
             rig_blendShape.clearTargetDeltas(bs, pose)
     mc.undoInfo(closeChunk=1)
 
@@ -453,8 +452,6 @@ def enable_interpolator_toggle(interp_graph):
     update_primary()
     update_secondary()
     mc.undoInfo(closeChunk=1)
-
-
 def update_pose(pose_graph):
     '''
     This will update the selected poses with whatever the controls that are pose controls on the interpolator.
@@ -481,6 +478,8 @@ def sync_pose(pose_graph):
 
 
 def mirror_delta(pose_graph):
+    symmetry_state = mc.symmetricModelling(q=1, symmetry=1)
+
     sel_nodes = pose_graph.getSelectedNodes()
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
@@ -496,6 +495,8 @@ def mirror_delta(pose_graph):
         if restore_sculpt:
             mc.setToolTo('sculptMeshCacheContext')
 
+    if not symmetry_state:
+        mc.symmetricModelling(e=1, symmetry=0)
 
 def live_toggle(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -539,7 +540,7 @@ def duplicate_shape(pose_graph):
         attrs = ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz', 'v']
         for dup in dupes:
             for a in attrs:
-                mc.setAttr(dup + '.' + a, l=0)
+                mc.setAttr(dup+'.'+a, l=0)
 
         mc.select(dupes)
 
@@ -924,7 +925,6 @@ def secondary_tree_selection_change(pose_graph):
     if shape_list:
         mc.select(shape_list)
 
-
 def launch():
     global update_secondary
     global update_primary
@@ -970,7 +970,7 @@ LayerGraphTreeView.pSelectionChanged
             centralWidget.update_secondary_graph()
                 psdModel.refresh_pose_graph
             centralWidget.update_secondary_graph()
-
+    
     psdModel.refresh_pose_graph
         centralWidget.update_secondary_graph
 '''

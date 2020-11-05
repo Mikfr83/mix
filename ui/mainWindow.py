@@ -44,7 +44,6 @@ class MainWindow(QtWidgets.QWidget):
         :param parent: The parent for the ui
         :type parent: QtGui.QWidget
         '''
-        
         if not MainWindow._initialized:
             super(MainWindow, self).__init__(parent)
             MainWindow._initialized = True
