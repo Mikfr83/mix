@@ -448,6 +448,8 @@ def sync_pose(pose_graph):
     update_secondary()
 
 def mirror_delta(pose_graph):
+    symmetry_state = mc.symmetricModelling(q=1, symmetry=1)
+
     sel_nodes = pose_graph.getSelectedNodes()
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
@@ -462,6 +464,9 @@ def mirror_delta(pose_graph):
         rig_psd.mirrorDelta(interp, pose)
         if restore_sculpt:
             mc.setToolTo('sculptMeshCacheContext')
+
+    if not symmetry_state:
+        mc.symmetricModelling(e=1, symmetry=0)
 
 def live_toggle(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
