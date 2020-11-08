@@ -290,6 +290,9 @@ def add_pose_control(interp_graph):
                 node_name = control_attr_split[0]
                 if mc.attributeQuery(attr_name, node=node_name, at=True) == 'double3':
                     attr_value = attr_value[0]
+                    attr_value = [mm.eval('deg_to_rad({})'.format(value)) for value in attr_value]
+                elif mc.attributeQuery(attr_name, node=node_name, at=True) in 'doubleAngle':
+                    attr_value = mm.eval('deg_to_rad({})'.format(attr_value))
                 rig_psd.setPoseControlData(interp, pose, control_attr, attr_value)
 
     mc.undoInfo(closeChunk=1)
@@ -464,6 +467,7 @@ def update_pose(pose_graph):
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
         rig_psd.updatePose(interp, pose)
+
     update_secondary()
 
 
