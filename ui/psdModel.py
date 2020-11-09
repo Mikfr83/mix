@@ -64,7 +64,7 @@ def interp_clicked(interp_graph):
     '''
     '''
     view_pose_controls(interp_graph)
-    #view_drivers(interp_graph)
+    view_drivers(interp_graph)
 
 
 def target_clicked(pose_graph):
@@ -672,15 +672,20 @@ def view_drivers(interp_graph, show=False):
     else:
         driver_widget.repaint()
 """
-def view_drivers(interp_graph):
+def view_drivers(interp_graph, show=False):
     selected_nodes = interp_graph.getSelectedNodes()
 
     if selected_nodes:
-        interp = selected_nodes[0].getAttributeByName('full_name').getValue()
-        if interp:
+        interp_attr_list = [node.getAttributeByName('full_name') for node in selected_nodes]
+        interp_list = [interp_attr.getValue() for interp_attr in interp_attr_list if interp_attr]
+        if interp_list:
             # driver list for the first selected interpolator.
-            twist_dialog = mix.ui.inputDialog.TwistTableDialog()
-            twist_dialog.set_twist('Driver Twist:', interp)
+            driver_widget.set_twist(interp_list)
+
+    if show:
+        driver_widget.show()
+    else:
+        driver_widget.repaint()
 
 def view_pose_controls(interp_graph, show=False):
     '''
@@ -747,7 +752,7 @@ def build_interp_graph(interp_graph):
         {'position': 'S', 'text': 'Select Interpolator', 'func': partial(select_interpolator, interp_graph)},
         {'position': 'SW', 'text': 'Select Drivers', 'func': partial(select_drivers, interp_graph)},
         {'position': 'SE', 'text': 'Delete Interpolator', 'func': partial(delete_interpolator, interp_graph)},
-        {'position': '', 'text': 'View Drivers', 'func': partial(view_drivers, interp_graph)},
+        {'position': '', 'text': 'View Drivers', 'func': partial(view_drivers, interp_graph, True)},
         {'position': '', 'text': 'View Pose Controls', 'func': partial(view_pose_controls, interp_graph, True)},
     ])
 
@@ -983,11 +988,9 @@ def launch():
     mix_win = mix.ui.mainWindow.launch(primary_graph=interp_graph, secondary_graph=pose_graph)
 
     # temp widgets
-    '''
-    driver_widget = QtWidgets.QListWidget()
+    driver_widget = mix.ui.inputDialog.TwistTableDialog()
     driver_widget.setWindowTitle('Drivers')
     driver_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
-    '''
     pose_control_widget = QtWidgets.QListWidget()
     pose_control_widget.setWindowTitle('Pose Controls')
     pose_control_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
