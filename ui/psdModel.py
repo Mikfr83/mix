@@ -426,6 +426,33 @@ def set_pose_falloff(interp_graph, pose_graph):
 
     update_secondary()
 
+def set_pose_type(interp_graph, pose_graph):
+    '''
+    This will bring up a list widget that the user can use to set the type of pose they want it to be.
+    '''
+    sel_nodes = pose_graph.getSelectedNodes()
+    if not sel_nodes:
+        return
+    # get the first index info
+    pose_name = sel_nodes[0].getAttributeByName('full_name').getValue()
+    interp_name = sel_nodes[0].getAttributeByName('interp').getValue()
+    pose_type_index = mc.getAttr('{}.pose[{}].poseType'.format(interp_name, rig_psd.getPoseIndex(interp_name, pose_name)))
+    default_item_list = ['swing', 'twist', 'swing and twist']
+    index_name_list = ['swing and twist', 'swing', 'twist']
+    default_index = default_item_list.index(index_name_list[pose_type_index])
+    # pull up the dialog box
+    item, ok = g_dialog.get_item('Set Pose Type', 'Pose Type:', default_item_list,default_index)
+
+    if not ok or not item:
+        return
+    pose_type_index = index_name_list.index(item)
+    for pose_node in sel_nodes:
+        pose_name = pose_node.getAttributeByName('full_name').getValue()
+        interp_name = pose_node.getAttributeByName('interp').getValue()
+        print 'setting pose {} on interp {} to pose type {}->{}'.format(pose_name, interp_name, item, pose_type_index)
+        mc.setAttr('{}.pose[{}].poseType'.format(interp_name, rig_psd.getPoseIndex(interp_name, pose_name)), pose_type_index)
+
+    update_secondary()
 
 def enable_interpolator_toggle(interp_graph):
     '''
@@ -644,6 +671,15 @@ def view_drivers(interp_graph, show=False):
     else:
         driver_widget.repaint()
 
+def view_driver_twist_values(interp_graph):
+    selected_nodes = interp_graph.getSelectedNodes()
+
+    if selected_nodes:
+        interp = selected_nodes[0].getAttributeByName('full_name').getValue()
+        if interp:
+            # driver list for the first selected interpolator.
+            twist_dialog = mix.ui.inputDialog.TwistTableDialog()
+            twist_dialog.set_twist('Driver Twist:', interp)
 
 def view_pose_controls(interp_graph, show=False):
     '''
@@ -667,7 +703,6 @@ def view_pose_controls(interp_graph, show=False):
         pose_control_widget.show()
     else:
         pose_control_widget.repaint()
-
 
 def build_interp_graph(interp_graph):
     interp_graph.clearNodes()
@@ -712,11 +747,11 @@ def build_interp_graph(interp_graph):
         {'position': 'SW', 'text': 'Select Drivers', 'func': partial(select_drivers, interp_graph)},
         {'position': 'SE', 'text': 'Delete Interpolator', 'func': partial(delete_interpolator, interp_graph)},
         {'position': '', 'text': 'View Drivers', 'func': partial(view_drivers, interp_graph, True)},
+        {'position': '', 'text': 'Set Driver Twist', 'func': partial(view_driver_twist_values, interp_graph)},
         {'position': '', 'text': 'View Pose Controls', 'func': partial(view_pose_controls, interp_graph, True)},
     ])
 
     return (interp_graph)
-
 
 def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
     '''
@@ -905,6 +940,7 @@ def build_pose_graph(interp_graph, pose_graph):
         {'position': '', 'text': 'Delete Pose', 'func': partial(delete_pose, interp_graph, pose_graph)},
         {'position': '', 'text': '-------------', 'func': None},
         {'position': '', 'text': 'Set Pose Falloff', 'func': partial(set_pose_falloff, interp_graph, pose_graph)},
+        {'position': '', 'text': 'Set Pose Type', 'func': partial(set_pose_type, interp_graph, pose_graph)},
         {'position': '', 'text': 'Sync Pose', 'func': partial(sync_pose, pose_graph)},
         {'position': '', 'text': 'Update Pose', 'func': partial(update_pose, pose_graph)},
         {'position': '', 'text': '-------------', 'func': None},
@@ -953,6 +989,7 @@ def launch():
     pose_control_widget = QtWidgets.QListWidget()
     pose_control_widget.setWindowTitle('Pose Controls')
     pose_control_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
 
     # Connect graph update functions
     mix_win.centralWidget.update_primary_graph = partial(build_interp_graph, interp_graph)
