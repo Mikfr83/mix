@@ -64,7 +64,7 @@ def interp_clicked(interp_graph):
     '''
     '''
     view_pose_controls(interp_graph)
-    view_drivers(interp_graph)
+    #view_drivers(interp_graph)
 
 
 def target_clicked(pose_graph):
@@ -646,6 +646,7 @@ def getModelPanels():
 
 
 # these are temporary functions
+"""
 def view_drivers(interp_graph, show=False):
     '''
     show the selected drivers using a list view
@@ -670,8 +671,8 @@ def view_drivers(interp_graph, show=False):
         driver_widget.show()
     else:
         driver_widget.repaint()
-
-def view_driver_twist_values(interp_graph):
+"""
+def view_drivers(interp_graph):
     selected_nodes = interp_graph.getSelectedNodes()
 
     if selected_nodes:
@@ -746,8 +747,7 @@ def build_interp_graph(interp_graph):
         {'position': 'S', 'text': 'Select Interpolator', 'func': partial(select_interpolator, interp_graph)},
         {'position': 'SW', 'text': 'Select Drivers', 'func': partial(select_drivers, interp_graph)},
         {'position': 'SE', 'text': 'Delete Interpolator', 'func': partial(delete_interpolator, interp_graph)},
-        {'position': '', 'text': 'View Drivers', 'func': partial(view_drivers, interp_graph, True)},
-        {'position': '', 'text': 'Set Driver Twist', 'func': partial(view_driver_twist_values, interp_graph)},
+        {'position': '', 'text': 'View Drivers', 'func': partial(view_drivers, interp_graph)},
         {'position': '', 'text': 'View Pose Controls', 'func': partial(view_pose_controls, interp_graph, True)},
     ])
 
@@ -983,9 +983,11 @@ def launch():
     mix_win = mix.ui.mainWindow.launch(primary_graph=interp_graph, secondary_graph=pose_graph)
 
     # temp widgets
+    '''
     driver_widget = QtWidgets.QListWidget()
     driver_widget.setWindowTitle('Drivers')
     driver_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+    '''
     pose_control_widget = QtWidgets.QListWidget()
     pose_control_widget.setWindowTitle('Pose Controls')
     pose_control_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
