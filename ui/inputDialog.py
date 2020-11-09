@@ -49,6 +49,7 @@ class TwistTableDialog(MayaQWidgetBaseMixin, QtWidgets.QDialog):
                 self.tableWidget.setItem(row_index, 0, QtWidgets.QTableWidgetItem(item))
                 comboBox = QtWidgets.QComboBox()
                 comboBox.addItems(self.__twist_value_list)
+                comboBox.wheelEvent = self._combo_box_wheel_event
                 comboBox.setCurrentIndex(mc.getAttr('{}.driver[{}].driverTwistAxis'.format(interp, i)))
                 self.combo_dict[interp].append(comboBox)
                 self.tableWidget.setCellWidget(row_index, 1, comboBox)
@@ -67,3 +68,6 @@ class TwistTableDialog(MayaQWidgetBaseMixin, QtWidgets.QDialog):
             driver_list.extend(mc.poseInterpolator(interp, q=1, drivers=1))
 
         return driver_list
+
+    def _combo_box_wheel_event(self, event):
+        return
