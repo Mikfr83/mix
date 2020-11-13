@@ -1,13 +1,15 @@
 import mix
 import maya.mel as mm
+import traceback
+
+import mix.ui.centralWidget
+
+reload(mix.ui.centralWidget)
 
 import mix.ui.mainWindow
 
 reload(mix.ui.mainWindow)
 
-import mix.ui.centralWidget
-
-reload(mix.ui.centralWidget)
 
 import mix.ui.layerGraphTreeView
 
@@ -83,21 +85,21 @@ def target_double_clicked(pose_graph):
 
 def apply_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
-    geo = mc.ls(sl=1)
-    if not geo:
+    sel_geo = mc.ls(sl=1)
+    if not sel_geo:
         return
+    sel_geo = sel_geo[0]
+
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
         bs = rig_psd.getDeformer(interp)
         rig_psd.goToPose(interp, pose)
-        if len(geo) == 1:
-            rig_psd.applyPose(interp, pose, bs, geo[0])
-        else:
-            geo_name = get_pose_geo_path(bs, interp, pose)
-            if mc.objExists(geo_name):
-                rig_psd.applyPose(interp, pose, bs, geo_name)
-
+        pose_geo = get_pose_geo_path(bs, interp, pose)
+        if len(sel_geo) == 1:
+            pose_geo = sel_geo
+        if mc.objExists(pose_geo):
+            rig_psd.applyPoseSymmetry(interp, pose, bs, pose_geo)
 
 def get_pose_geo_path(bs, interp, pose):
     interp_name = rig_psd.getInterpNiceName(interp) + '_interp'
@@ -110,14 +112,17 @@ def set_all_neutral(interp_graph):
     Will set all interpolator neutral poses to get to the default state of the character.
     '''
     mc.undoInfo(openChunk=1)
-    node_list = interp_graph.getNodes()
+    try:
+        node_list = interp_graph.getNodes()
 
-    for node in node_list:
-        full_name_attr = node.getAttributeByName('full_name')
-        if full_name_attr:
-            interp_list = mc.ls(full_name_attr.getValue())
-            if interp_list:
-                rig_psd.goToNeutralPose(interp_list)
+        for node in node_list:
+            full_name_attr = node.getAttributeByName('full_name')
+            if full_name_attr:
+                interp_list = mc.ls(full_name_attr.getValue())
+                if interp_list:
+                    rig_psd.goToNeutralPose(interp_list)
+    except:
+        traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
 
@@ -125,42 +130,52 @@ def delete_interpolator(interp_graph):
     '''
     This will delete the selected interpolators from the maya session.
     '''
-    mc.undoInfo(openChunk=1)
-    selected_node_list = interp_graph.getSelectedNodes()
-    if not selected_node_list:
-        return
-    # loop throught the selected nodes in the list and delete them q
-    for node in selected_node_list:
-        interp = node.getAttributeByName('full_name').getValue()
-        pose_list = rig_psd.getPoseNames(interp)
-        rig_psd.deletePose(interp, pose_list)
-        mc.delete(mc.listRelatives(interp, p=True)[0])
 
-    update_primary()
+    mc.undoInfo(openChunk=1)
+    try:
+        selected_node_list = interp_graph.getSelectedNodes()
+        if not selected_node_list:
+            return
+        # loop throught the selected nodes in the list and delete them q
+        for node in selected_node_list:
+            interp = node.getAttributeByName('full_name').getValue()
+            pose_list = rig_psd.getPoseNames(interp)
+            rig_psd.deletePose(interp, pose_list)
+            mc.delete(mc.listRelatives(interp, p=True)[0])
+
+        update_primary()
+    except:
+        traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
 
 def delete_pose(interp_graph, pose_graph):
     mc.undoInfo(openChunk=1)
-    sel_nodes = pose_graph.getSelectedNodes()
-    for node in sel_nodes:
-        interp = node.getAttributeByName('interp').getValue()
-        pose = node.getAttributeByName('full_name').getValue()
-        rig_psd.deletePose(interp, pose)
+    try:
+        sel_nodes = pose_graph.getSelectedNodes()
+        for node in sel_nodes:
+            interp = node.getAttributeByName('interp').getValue()
+            pose = node.getAttributeByName('full_name').getValue()
+            rig_psd.deletePose(interp, pose)
 
-    update_secondary()
+        update_secondary()
+    except:
+        traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
 
 def delete_deltas(interp_graph, pose_graph):
     mc.undoInfo(openChunk=1)
-    sel_nodes = pose_graph.getSelectedNodes()
-    for node in sel_nodes:
-        interp = node.getAttributeByName('interp').getValue()
-        pose = node.getAttributeByName('full_name').getValue()
-        bs = rig_psd.getDeformer(interp)
-        if mc.objExists(bs+'.'+pose):
-            rig_blendShape.clearTargetDeltas(bs, pose)
+    try:
+        sel_nodes = pose_graph.getSelectedNodes()
+        for node in sel_nodes:
+            interp = node.getAttributeByName('interp').getValue()
+            pose = node.getAttributeByName('full_name').getValue()
+            bs = rig_psd.getDeformer(interp)
+            if mc.objExists(bs+'.'+pose):
+                rig_blendShape.clearTargetDeltas(bs, pose)
+    except:
+        traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
 
@@ -172,68 +187,71 @@ def add_interpolator(interp_graph):
     :type interp_graph: UGraph
     '''
     mc.undoInfo(openChunk=1)
-    # get the selected nodes.
-    selected_node_list = interp_graph.getSelectedNodes()
+    try:
+        # get the selected nodes.
+        selected_node_list = interp_graph.getSelectedNodes()
 
-    # get the current group list to check against.
-    current_group_list = [mc.getAttr('{}.directoryName'.format(parent_attr)) for parent_attr in
-                          mc.ls('poseInterpolatorManager.poseInterpolatorDirectory[*]')]
+        # get the current group list to check against.
+        current_group_list = [mc.getAttr('{}.directoryName'.format(parent_attr)) for parent_attr in
+                              mc.ls('poseInterpolatorManager.poseInterpolatorDirectory[*]')]
 
-    # if there is a group selected we will
-    group_name = None
-    for node in selected_node_list:
-        # store the node name in a variable
-        node_name = node.getName()
-        if node_name in current_group_list:
-            group_name = node_name
-            break
-        elif mc.nodeType(node.getAttributeByName('full_name').getValue()) == 'poseInterpolator':
-            full_name = node.getAttributeByName('full_name').getValue()
-            group_name = rig_psd.getGroup(rig_psd.getInterp(full_name))
-            break
+        # if there is a group selected we will
+        group_name = None
+        for node in selected_node_list:
+            # store the node name in a variable
+            node_name = node.getName()
+            if node_name in current_group_list:
+                group_name = node_name
+                break
+            elif mc.nodeType(node.getAttributeByName('full_name').getValue()) == 'poseInterpolator':
+                full_name = node.getAttributeByName('full_name').getValue()
+                group_name = rig_psd.getGroup(rig_psd.getInterp(full_name))
+                break
 
-    # if no groups are selected we will punt and ask a user to select a group.
-    if not group_name:
-        print('Please select a group that so we can add the interpolator to it.')
+        # if no groups are selected we will punt and ask a user to select a group.
+        if not group_name:
+            print('Please select a group that so we can add the interpolator to it.')
 
-    # pull up the dialog box
-    text, ok = g_dialog.get_text('interpolator', 'Interpolator name:', "poseInterp")
-    if not ok:
-        return
-
-    interp_text = common.getValidName(text)
-    if not interp_text:
-        return
-    # Get all interps
-    interp_list = rig_psd.getGroupChildren(group_name)
-
-    def _getBlendShape(message):
         # pull up the dialog box
-        text, ok = g_dialog.get_text('Blendshape', message, rig_psd.getDeformer(interp_list[0]))
+        text, ok = g_dialog.get_text('interpolator', 'Interpolator name:', "poseInterp")
         if not ok:
             return
-        if not text:
-            return _getBlendShape('Please do not leave text field empty.')
-        if not mc.objExists(text) or mc.nodeType(text) != 'blendShape':
-            return _getBlendShape('Blendshape {} does not exist. Please select one that exist in your Maya session.')
 
-        return text
+        interp_text = common.getValidName(text)
+        if not interp_text:
+            return
+        # Get all interps
+        interp_list = rig_psd.getGroupChildren(group_name)
 
-    blendshape_name = _getBlendShape('Select Blendshape:')
-    if not blendshape_name:
-        return
-    interp_name = '{}_poseInterpolator'.format(interp_text)
-    print('Adding Interpolator [ {} ]'.format(interp_text))
-    # create the interpolator and make the connection to the blendshape attribute
-    interp = rig_psd.addInterp(interp_name, group=group_name)
-    mc.connectAttr('{}.message'.format(blendshape_name), '{}.blendShape[0]'.format(interp), f=True)
-    # pull up the dialog box
-    group_node = interp_graph.getNodeByName(group_name)
-    interp_node = interp_graph.addNode(interp_text, group_node)
-    interp_node.addAttribute('full_name', interp)
-    interp_node.addAttribute('blendshape', blendshape_name)
+        def _getBlendShape(message):
+            # pull up the dialog box
+            text, ok = g_dialog.get_text('Blendshape', message, rig_psd.getDeformer(interp_list[0]))
+            if not ok:
+                return
+            if not text:
+                return _getBlendShape('Please do not leave text field empty.')
+            if not mc.objExists(text) or mc.nodeType(text) != 'blendShape':
+                return _getBlendShape('Blendshape {} does not exist. Please select one that exist in your Maya session.')
 
-    update_primary()
+            return text
+
+        blendshape_name = _getBlendShape('Select Blendshape:')
+        if not blendshape_name:
+            return
+        interp_name = '{}_poseInterpolator'.format(interp_text)
+        print('Adding Interpolator [ {} ]'.format(interp_text))
+        # create the interpolator and make the connection to the blendshape attribute
+        interp = rig_psd.addInterp(interp_name, group=group_name)
+        mc.connectAttr('{}.message'.format(blendshape_name), '{}.blendShape[0]'.format(interp), f=True)
+        # pull up the dialog box
+        group_node = interp_graph.getNodeByName(group_name)
+        interp_node = interp_graph.addNode(interp_text, group_node)
+        interp_node.addAttribute('full_name', interp)
+        interp_node.addAttribute('blendshape', blendshape_name)
+
+        update_primary()
+    except:
+        traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
 
@@ -245,18 +263,21 @@ def add_driver(interp_graph):
     :type interp_graph: UGraph
     '''
     mc.undoInfo(openChunk=1)
-    sel_nodes = interp_graph.getSelectedNodes()
-    if not sel_nodes:
-        return
+    try:
+        sel_nodes = interp_graph.getSelectedNodes()
+        if not sel_nodes:
+            return
 
-    driver_list = mc.ls(sl=True, type=['joint', 'transform'])
+        driver_list = mc.ls(sl=True, type=['joint', 'transform'])
 
-    if not driver_list:
-        raise RuntimeError('Only joints can be drivers. Please select a joint you want to use as a driver.')
+        if not driver_list:
+            raise RuntimeError('Only joints can be drivers. Please select a joint you want to use as a driver.')
 
-    # Get a pose default name to enter in the text
-    interp = sel_nodes[0].getAttributeByName('full_name').getValue()
-    rig_psd.addDriver(interp, driver_list)
+        # Get a pose default name to enter in the text
+        interp = sel_nodes[0].getAttributeByName('full_name').getValue()
+        rig_psd.addDriver(interp, driver_list)
+    except:
+        traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
 
@@ -268,33 +289,35 @@ def add_pose_control(interp_graph):
     :type interp_graph: UGraph
     '''
     mc.undoInfo(openChunk=1)
-    sel_nodes = interp_graph.getSelectedNodes()
-    for interp_node in sel_nodes:
-        selected_controls = mc.ls(sl=True)
-        selected_attributes = rig_attribute.get_selected_main_channel_box()
-        # get the interp
-        interp = interp_node.getAttributeByName('full_name').getValue()
-        # loop through the selected controls
-        for control in selected_controls:
-            control_attr_list = rig_attribute.get_resolved_attributes(control, selected_attributes)
-            rig_psd.addPoseControl(interp, control_attr_list)
-        pose_names = rig_psd.getPoseNames(interp) or []
-        # go through each existing pose and make sure that the pose information is updated.
-        for pose in pose_names:
-            for control_attr in control_attr_list:
-                # get the value
-                attr_value = mc.getAttr(control_attr)
-                # split the name so we can query the type of attribute, incase it's a double3
-                control_attr_split = control_attr.split('.')
-                attr_name = control_attr_split[-1]
-                node_name = control_attr_split[0]
-                if mc.attributeQuery(attr_name, node=node_name, at=True) == 'double3':
-                    attr_value = attr_value[0]
-                    attr_value = [mm.eval('deg_to_rad({})'.format(value)) for value in attr_value]
-                elif mc.attributeQuery(attr_name, node=node_name, at=True) in 'doubleAngle':
-                    attr_value = mm.eval('deg_to_rad({})'.format(attr_value))
-                rig_psd.setPoseControlData(interp, pose, control_attr, attr_value)
-
+    try:
+        sel_nodes = interp_graph.getSelectedNodes()
+        for interp_node in sel_nodes:
+            selected_controls = mc.ls(sl=True)
+            selected_attributes = rig_attribute.get_selected_main_channel_box()
+            # get the interp
+            interp = interp_node.getAttributeByName('full_name').getValue()
+            # loop through the selected controls
+            for control in selected_controls:
+                control_attr_list = rig_attribute.get_resolved_attributes(control, selected_attributes)
+                rig_psd.addPoseControl(interp, control_attr_list)
+            pose_names = rig_psd.getPoseNames(interp) or []
+            # go through each existing pose and make sure that the pose information is updated.
+            for pose in pose_names:
+                for control_attr in control_attr_list:
+                    # get the value
+                    attr_value = mc.getAttr(control_attr)
+                    # split the name so we can query the type of attribute, incase it's a double3
+                    control_attr_split = control_attr.split('.')
+                    attr_name = control_attr_split[-1]
+                    node_name = control_attr_split[0]
+                    if mc.attributeQuery(attr_name, node=node_name, at=True) == 'double3':
+                        attr_value = attr_value[0]
+                        attr_value = [mm.eval('deg_to_rad({})'.format(value)) for value in attr_value]
+                    elif mc.attributeQuery(attr_name, node=node_name, at=True) in 'doubleAngle':
+                        attr_value = mm.eval('deg_to_rad({})'.format(attr_value))
+                    rig_psd.setPoseControlData(interp, pose, control_attr, attr_value)
+    except:
+        traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
 
@@ -459,29 +482,23 @@ def enable_interpolator_toggle(interp_graph):
 
     '''
     mc.undoInfo(openChunk=1)
-    sel_nodes = interp_graph.getSelectedNodes()
-    if sel_nodes:
-        for node in sel_nodes:
-            state = node.isActive()
-            interp = node.getAttributeByName('full_name').getValue()
-            pose_name_list = rig_psd.getPoseNames(interp)
-            if state:
-                node.disable()
-                for pose in pose_name_list:
-                    rig_psd.disablePose(interp, pose)
-                    if not mc.objExists('{}.enabled'.format(interp)):
-                        mc.addAttr(interp, ln='enabled', at='bool')
-                    mc.setAttr('{}.enabled'.format(interp), False)
-            else:
-                node.enable()
-                for pose in pose_name_list:
-                    rig_psd.enablePose(interp, pose)
-                    if not mc.objExists('{}.enabled'.format(interp)):
-                        mc.addAttr(interp, ln='enabled', at='bool')
-                    mc.setAttr('{}.enabled'.format(interp), True)
-    update_primary()
-    update_secondary()
+    try:
+        sel_nodes = interp_graph.getSelectedNodes()
+        if sel_nodes:
+            state = sel_nodes[0].isActive()
+            for node in sel_nodes:
+                interp = node.getAttributeByName('full_name').getValue()
+                if state:
+                    node.disable()
+                    rig_psd.disableInterp(interp)
+                else:
+                    node.enable()
+                    rig_psd.enableInterp(interp)
+        update_secondary()
+    except:
+        traceback.print_exc()
     mc.undoInfo(closeChunk=1)
+
 def update_pose(pose_graph):
     '''
     This will update the selected poses with whatever the controls that are pose controls on the interpolator.
@@ -914,6 +931,8 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
         else:
             pose_node.disable()
 
+    view_pose_controls(interp_graph)
+    view_drivers(interp_graph)
     return (pose_graph)
 
 

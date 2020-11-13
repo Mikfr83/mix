@@ -41,6 +41,8 @@ class TwistTableDialog(MayaQWidgetBaseMixin, QtWidgets.QDialog):
         self.combo_dict={}
         row_index = 0
         total_driver_list = self.__get_driver_list(self.interp_list)
+        if not total_driver_list:
+            return
         self.tableWidget.setRowCount(len(total_driver_list))
         for interp in self.interp_list:
             self.combo_dict[interp] = list()
@@ -65,7 +67,9 @@ class TwistTableDialog(MayaQWidgetBaseMixin, QtWidgets.QDialog):
     def __get_driver_list(self, interp_list):
         driver_list = []
         for interp in self.interp_list:
-            driver_list.extend(mc.poseInterpolator(interp, q=1, drivers=1))
+            drivers = mc.poseInterpolator(interp, q=1, drivers=1)
+            if drivers:
+                driver_list.extend(drivers)
 
         return driver_list
 
