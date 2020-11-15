@@ -12,6 +12,7 @@ try:
     from maya import OpenMayaUI 
     import maya.cmds as mc
     from maya import mel
+    import maya.mel as mm
     MAYA = True
 except:
     MAYA = False

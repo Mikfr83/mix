@@ -2,7 +2,7 @@
 Base weight object.
 '''
 
-class PObject(object):
+class MixObject(object):
     def __init__(self,name):
         self._name = name
         self._color = (100,100,100)

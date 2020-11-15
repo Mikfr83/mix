@@ -1,9 +1,7 @@
-import sys
-from maya.app.general.mayaMixin import MayaQWidgetBaseMixin
-import maya.cmds as mc
 import showtools.maya.common as common
+import model_manager
 from mix.ui import *
-class InputDialog(MayaQWidgetBaseMixin, QtWidgets.QWidget):
+class InputDialog(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(InputDialog, self).__init__(parent)
 
@@ -17,7 +15,7 @@ class InputDialog(MayaQWidgetBaseMixin, QtWidgets.QWidget):
 
         return (item, ok)
 
-class TwistTableDialog(MayaQWidgetBaseMixin, QtWidgets.QDialog):
+class TwistTableDialog(QtWidgets.QDialog):
 
     def __init__(self, parent=None):
         super(TwistTableDialog, self).__init__(parent)
@@ -41,18 +39,16 @@ class TwistTableDialog(MayaQWidgetBaseMixin, QtWidgets.QDialog):
         self.combo_dict={}
         row_index = 0
         total_driver_list = self.__get_driver_list(self.interp_list)
-        if not total_driver_list:
-            return
         self.tableWidget.setRowCount(len(total_driver_list))
         for interp in self.interp_list:
             self.combo_dict[interp] = list()
-            driver_list = mc.poseInterpolator(interp, q=1, drivers=1)
+            driver_list = model_manager.PSD_MODEL.get_drivers(interp)
             for i, item in enumerate(driver_list):
                 self.tableWidget.setItem(row_index, 0, QtWidgets.QTableWidgetItem(item))
                 comboBox = QtWidgets.QComboBox()
                 comboBox.addItems(self.__twist_value_list)
                 comboBox.wheelEvent = self._combo_box_wheel_event
-                comboBox.setCurrentIndex(mc.getAttr('{}.driver[{}].driverTwistAxis'.format(interp, i)))
+                comboBox.setCurrentIndex(model_manager.PSD_MODEL.get_current_twist_value(interp, i))
                 self.combo_dict[interp].append(comboBox)
                 self.tableWidget.setCellWidget(row_index, 1, comboBox)
                 row_index += 1
@@ -61,15 +57,12 @@ class TwistTableDialog(MayaQWidgetBaseMixin, QtWidgets.QDialog):
         super(TwistTableDialog, self).accept()
         for interp in self.interp_list:
             for i, combo_box in enumerate(self.combo_dict[interp]):
-                mc.setAttr('{}.driver[{}].driverTwistAxis'.format(interp, i),
-                           self.__twist_value_list.index(combo_box.currentText()))
+                model_manager.PSD_MODEL.get_current_twist_value(interp, i)
 
     def __get_driver_list(self, interp_list):
         driver_list = []
         for interp in self.interp_list:
-            drivers = mc.poseInterpolator(interp, q=1, drivers=1)
-            if drivers:
-                driver_list.extend(drivers)
+            driver_list.extend(model_manager.PSD_MODEL.get_drivers(interp))
 
         return driver_list
 

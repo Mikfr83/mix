@@ -1,9 +1,9 @@
 '''
 Attribute will track and manage all data with-in an attribute
 '''
-import pObject as pObject
+import mix_object as mix_object
 
-class PAttribute(pObject.PObject):
+class MixAttribute(mix_object.MixObject):
     '''
     Base Attribute to manage all data for nodes
     '''
@@ -18,11 +18,11 @@ class PAttribute(pObject.PObject):
         :param attribute: Attribute to check
         :type attribute: Attribute | anything else
         '''
-        if not isinstance(attribute, PAttribute):
+        if not isinstance(attribute, MixAttribute):
             return False
-        
+
         return True
-    
+
     @staticmethod
     def inValidError(attribute):
         '''
@@ -32,7 +32,7 @@ class PAttribute(pObject.PObject):
         :type attribute: anything other then Attribute
         '''
         raise TypeError("{0} is not of type attribute.Attribute".format(attribute))
-    
+
     def __init__(self, longName = None, shortName = None, attrType = None, value = None):
         '''
         The constructor method for this attribute.
@@ -49,20 +49,20 @@ class PAttribute(pObject.PObject):
         :param value: The value to make the attribute.
         :type value: bool | basestring | str | int | float | list | tuple
         '''
-        super(PAttribute, self).__init__(longName)
+        super(MixAttribute, self).__init__(longName)
         self._shortName   = shortName
         self._value       = value
         self._storable    = True
         self._connectable = True
         self._type = attrType
         self.setType(attrType)
-        
+
 
     #{ GET
     def getType(self):
         '''Returns the type of attribute. '''
         return self._type
-    
+
     def getShortName(self):
         '''
         Returns the short name for this attribute.
@@ -78,17 +78,17 @@ class PAttribute(pObject.PObject):
     #{ SET
     def setStorable(self, value):
         '''
-        Sets whether or not this attribute 
+        Sets whether or not this attribute
         is able to be saved.
 
         :param value: Value to make this storable
         :type value: bool
         '''
         self._storable = self._setBool(value)
-        
+
     def setConnectable(self, value):
         '''
-        Sets whether or not this attribute 
+        Sets whether or not this attribute
         is able to be connected to.
 
         :param value: Value to make this connectable or not
@@ -107,7 +107,7 @@ class PAttribute(pObject.PObject):
         '''
         if not type(value).__name__ not in self.__attrTypes__:
             raise TypeError('{0} needs to be one of the following types: {1}'.format(value, self.__attrTypes__))
-        
+
         #build the command
         if isinstance(value, basestring):
             self._setStr(value)
@@ -121,13 +121,13 @@ class PAttribute(pObject.PObject):
             self._setFloat(value)
         elif isinstance(value, int):
             self._setInt(value)
-        
+
         self._value = value #set the value
 
     def setType(self, value):
         '''
         This will set the type you pass in to be a string.
-        .. note: This may change to not change it 
+        .. note: This may change to not change it
 
         :param value: This is the type of data you're setting this attribute too.
         :type value: bool | basestring | str | int | float | list | tuple
@@ -135,7 +135,7 @@ class PAttribute(pObject.PObject):
         if not value:
             self._type = type(self._value).__name__
         else:
-            if value in PAttribute.__attrTypes__ :
+            if value in MixAttribute.__attrTypes__ :
                 self._type = value.__name__
 
     def _setBool(self, value):
@@ -147,12 +147,12 @@ class PAttribute(pObject.PObject):
         '''
         if not isinstance(value, (bool,int)):
             raise TypeError("{0} must be <type 'bool'>".format(value))
-        
+
         if value:
             return True
-        
-        return False 
-    
+
+        return False
+
     def _setStr(self, value):
         '''
         Set the value to be string.
@@ -164,7 +164,7 @@ class PAttribute(pObject.PObject):
             raise TypeError("{0} must be <type 'str'>".format(value))
 
         return str(value)
-    
+
     def _setFloat(self, value):
         '''
         Set the value to be float.
@@ -174,9 +174,9 @@ class PAttribute(pObject.PObject):
         '''
         if not isinstance(value, (float,int,basestring)):
             raise TypeError("{0} must be <type 'float'>".format(value))
-        
+
         return float(value)
-    
+
     def _setInt(self, value):
         '''
         Set the value to be int.
@@ -186,9 +186,9 @@ class PAttribute(pObject.PObject):
         '''
         if not isinstance(value, (int,basestring,float)):
             raise TypeError("{0} must be <type 'int'>".format(value))
-        
+
         return int(value)
-    
+
     def _setList(self, value):
         '''
         Set the value to be list.
@@ -200,7 +200,7 @@ class PAttribute(pObject.PObject):
             raise TypeError("{0} must be <type 'list'>".format(value))
 
         return list(value)
-    
+
     def _setTuple(self, value):
         '''
         Set the value to be tuple.
@@ -221,11 +221,11 @@ class PAttribute(pObject.PObject):
     def isConnectable(self):
         '''Returns whether the attribute is connectable.'''
         return self._connectable
-    
+
     #{ MISC
     def create(self, longName, shortName, attrType, value):
-        if not attrType in PAttribute.__attrTypes__:
-            raise TypeError('{0} must be one of the following types: {1}'.format(attrType, str(*PAttribute.__attrTypes__)))
+        if not attrType in MixAttribute.__attrTypes__:
+            raise TypeError('{0} must be one of the following types: {1}'.format(attrType, str(*MixAttribute.__attrTypes__)))
         
         self.setName(longName)
         self._shortName = shortName

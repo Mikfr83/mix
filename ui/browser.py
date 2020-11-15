@@ -1,8 +1,7 @@
 '''
 This meant to be a file browser.
 '''
-import os
-from poise.ui import *
+from mix.ui import *
 
 class Browser(QtWidgets.QWidget):
     def __init__(self):

@@ -4,29 +4,21 @@ mix central widget
 from mix.ui import *
 
 #mix modules
-from mix.ui import layerGraphModel, layerGraphTreeView, fields
-import mix.pGraph as pGraph
-import mix.pNode as pNode
-import mix.ui.radialMenu
-reload(mix.ui.radialMenu)
+import mix.mix_graph as mix_graph
+import mix.ui.graph_model as graph_model
+import mix.ui.graph_tree_view as graph_tree_view
+import mix.ui.graph_tree_item as graph_tree_item
+import mix.ui.radial_menu
 
-class CentralTabWidget(QtWidgets.QTabWidget):
-    def __init__(self, primary_graph = pGraph.PGraph('null'), secondary_graph=pGraph.PGraph('null'), parent=None, tab_name='Main'):
-        super(CentralTabWidget, self).__init__(parent)
-        self._primary_graph = primary_graph
-        self._secondary_graph = secondary_graph
-
-        # -------------------------------------------------
-        # SETUP TAB
-        # -------------------------------------------------
-        setupWidget = QtWidgets.QWidget()
-
+class GraphWidget(QtWidgets.QWidget):
+    def __init__(self, primary_graph = graph_tree_item.GraphTreeItem('null'), secondary_graph=graph_tree_item.GraphTreeItem('null'), model=graph_model, parent=None):
+        super(GraphWidget, self).__init__(parent)
         # ------------------------------------------------
         # Primary Tree
         # ------------------------------------------------
-        self._setupWidgetLayout = QtWidgets.QHBoxLayout()
+        self.mainLayout = QtWidgets.QVBoxLayout()
         self._setupTreeFilter = QtWidgets.QLineEdit()
-        self._setupTreeView = layerGraphTreeView.LayerGraphTreeView()
+        self._setupTreeView = graph_tree_view.GraphTreeView()
         self._setupTreeView.setAlternatingRowColors(True)
         self._setupTreeView.setDragEnabled(True)
         self._setupTreeView.setAcceptDrops(True)
@@ -37,26 +29,16 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         # ------------------------------------------------
         # Secondary Tree
         # ------------------------------------------------
-        self._secondary_setupWidgetLayout = QtWidgets.QHBoxLayout()
-        self._secondary_setupTreeView = layerGraphTreeView.LayerGraphTreeView()
+        self._secondary_setupTreeView = graph_tree_view.GraphTreeView()
         self._secondary_setupTreeView.setAlternatingRowColors(True)
         self._secondary_setupTreeView.setDragEnabled(True)
         self._secondary_setupTreeView.setExpandsOnDoubleClick(True)
         self._secondary_setupTreeView.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 
-        #file view
-        #self._fileView = widgets.FileView()
-
-        #fields
-        # self._setupAttrsWidget = QtWidgets.QFrame()
-        # self._setupAttrsLayout = QtWidgets.QVBoxLayout(self._setupAttrsWidget)
-        # scrollAreaAttrs = QtWidgets.QScrollArea()
-        # scrollAreaAttrs.setWidget(self._setupAttrsWidget)
-        # scrollAreaAttrs.setWidgetResizable(True)
-        # self._setupAttrsWidget.setFrameShape(QtWidgets.QFrame.Panel)
-        # self._setupAttrsWidget.setFrameShadow(QtWidgets.QFrame.Sunken)
-        # #self._setupAttrsWidget.setMaximumWidth(200)
-        # self._setupAttrsWidget.setMinimumWidth(200)
+        self.model = model
+        # Graphs
+        self.set_primary_graph(primary_graph)
+        self.set_secondary_graph(secondary_graph)
 
         # ------------------------------------------------
         # bring it all together
@@ -64,24 +46,14 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         splitter = QtWidgets.QSplitter()
         splitter.addWidget(self._setupTreeView)
         splitter.addWidget(self._secondary_setupTreeView)
-        self._setupWidgetLayout.addWidget(splitter)
-        setupWidget.setLayout(self._setupWidgetLayout)
-
-        # Graphs
-        self._model = layerGraphModel.LayerGraphModel(self._primary_graph)
-        self._secondary_model = layerGraphModel.LayerGraphModel(self._secondary_graph)
-
-        # Models
-        self._setupTreeView.setModel(self._model)
-        self._secondary_setupTreeView.setModel(self._secondary_model)
+        self.mainLayout.addWidget(splitter)
+        self.setLayout(self.mainLayout)
 
         # Tree
         # Connect the primary treeView selectionChange signal to the secondaryTreeUpdate
-        self._setupTreeView.pSelectionChanged = self._primary_tree_selection_change
-        self._secondary_setupTreeView.pSelectionChanged = self._secondary_tree_selection_change
+        self._setupTreeView.selection_changed_signal.connect(self._primary_tree_selection_change)
+        self._secondary_setupTreeView.selection_changed_signal.connect(self._secondary_tree_selection_change)
 
-        # Tab
-        self.addTab(setupWidget, tab_name)
         self._setupTreeView.expandAll()
 
     def _toggleActive(self, graph):
@@ -105,8 +77,8 @@ class CentralTabWidget(QtWidgets.QTabWidget):
 
         if not index.isValid():
             return None
-        
-        return self._model.itemFromIndex(index)
+
+        return self._primary_graph_model.itemFromIndex(index)
 
     def _selectedNodeList(self, tree, model):
         '''
@@ -123,17 +95,17 @@ class CentralTabWidget(QtWidgets.QTabWidget):
 
     def _removeSelectedNode(self):
         index = self._setupTreeView.currentIndex()
-        
+
         node = self._selectedNode()
 
         #self._model.removeRows(index.row(), 1, self._model)
         if node:
-            self._model.beginRemoveRows( index.parent(), index.row(), index.row()+1-1 )
+            self._primary_graph_model.beginRemoveRows( index.parent(), index.row(), index.row()+1-1 )
             self.primary_graph.removeNode(node)
             #node.parent().removeChild(node)
-            self._model.endRemoveRows()
+            self._primary_graph_model.endRemoveRows()
             del node
-        
+
     def _copyNodePath(self):
         """
         This will copy the path to a clipboard.
@@ -146,94 +118,20 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         clipboard = QtWidgets.QApplication.clipboard()
         originalText = clipboard.setText("|".join(node.getFullPath().split("|root|")))
 
-    def _populateSetupAttrsLayout(self, index):
-        '''
-        Populates the attributes for the given node
-        
-        :param index: QModelIndex of the node you want to get attributes for
-        :type index: QtCore.QModelIndex
-        '''
-        #Check if there are any items in the layout
-        #if self._setupAttrsLayout.count():
-        #    self.clearLayout(self._setupAttrsLayout)
-
-        #check to see if the index passed is valid
-        if not index.isValid():
-            return None
-        
-        #get the node
-        node = self._model.itemFromIndex(index)
-
-        #go through the attributes on the node and create appropriate field
-        labelWidth = 150
-        for attr in node.getAttributes():
-            if attr.getName() == 'position':
-                field = fields.VectorField('{0}:'.format(attr.getName()), value = attr.getValue(), attribute = attr)
-            elif attr.getType() == "str":
-                field = fields.LineEditField('{0}:'.format(attr.getName()), value = str(attr.getValue()), attribute = attr)
-            elif attr.getType() == "bool":
-                field = fields.BooleanField('{0}:'.format(attr.getName()), value = attr.getValue(), attribute = attr)
-            elif attr.getType() == "int":
-                field = fields.IntField('{0}:'.format(attr.getName()), value = attr.getValue(), attribute = attr)
-            elif attr.getType() == "float":
-                field = fields.IntField('{0}:'.format(attr.getName()), value = attr.getValue(), attribute = attr)
-            elif attr.getType() == "list":
-                field = fields.ListField('{0}:'.format(attr.getName()), value = attr.getValue(), attribute = attr)
-            elif attr.getType() == "code":
-                field = fields.TextEditField('{0}:'.format(attr.getName()), value = attr.getValue(), attribute = attr)
-            elif attr.getType() == "file":
-                field = fields.FileBrowserField(label = '{0}:'.format(attr.getName()), filter = "",value = attr.getValue(), attribute = attr)
-            elif attr.getType() == "dir":
-                field = fields.DirBrowserField(label = '{0}:'.format(attr.getName()), value = attr.getValue(), attribute = attr)
-            
-            #add the field to the layout
-            field.label().setMinimumWidth(labelWidth)
-            field.label().setMaximumWidth(labelWidth)
-            field.label().setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
-            self._setupAttrsLayout.addWidget(field)
-
     def _addNode(self,*args):
         '''
         '''
         self._primary_graph.addNode('null')
-     
-    def clearLayout(self, layout):
-        '''
-        Clears a layout of any items with in the layout
-        
-        :param layout: Layout that you wish to clear
-        :type layout: QtGui.QLayout
-        '''
-        for i in reversed(range(layout.count())):
-            item = layout.itemAt(i)
-    
-            if isinstance(item, QtWidgets.QWidgetItem):
-                item.widget().close()
-                # or
-                # item.widget().setParent(None)
-            elif isinstance(item, QtWidgets.QSpacerItem):
-                pass
-                # no need to do extra stuff
-            else:
-                self.clearLayout(item.layout())
-    
-            # remove the item from layout
-            layout.removeItem(item)  
-            
-    def getAttrFieldValues(self):
-        for i in reversed(range(self._setupAttrsLayout.count())):
-            item = self._setupAttrsLayout.itemAt(i)
-            if isinstance(item, QtWidgets.QWidgetItem):
-                item.widget().value()
 
-    def set_primary_graph(self, graph=pGraph.PGraph('null')):
+    def set_primary_graph(self, graph=graph_tree_item.GraphTreeItem('null')):
         '''
         Set the primary graph with the passed graph
         '''
 
-        self._primary_graph = graph
-        self._model = layerGraphModel.LayerGraphModel(self._primary_graph)
-        self._setupTreeView.setModel(self._model)
+        self._primary_graph = graph or graph_tree_item.GraphTreeItem('null')
+        self.model.init_primary_graph(self._primary_graph)
+        self._primary_graph_model = self.model.GraphModel(self._primary_graph)
+        self._setupTreeView.setModel(self._primary_graph_model)
 
         # clicked func
         self._setupTreeView.clicked.connect(self.primary_tree_clicked)
@@ -241,14 +139,15 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         radial_menu_list = self._primary_graph.getRadialMenuList()
         self.buildRadialContextMenu(self._setupTreeView, radial_menu_list)
 
-    def set_secondary_graph(self, graph=pGraph.PGraph('null')):
+    def set_secondary_graph(self, graph=mix_graph.MixGraph('null')):
         '''
         Set the primary graph with the passed graph
         '''
 
         self._secondary_graph = graph
-        self._secondary_model = layerGraphModel.LayerGraphModel(graph)
-        self._secondary_setupTreeView.setModel(self._secondary_model)
+        self.model.init_secondary_graph(self._primary_graph, self._secondary_graph)
+        self._secondary_graph_model = self.model.GraphModel(graph)
+        self._secondary_setupTreeView.setModel(self._secondary_graph_model)
 
         # clicked func
         self._secondary_setupTreeView.clicked.connect(self.secondary_tree_clicked)
@@ -269,28 +168,21 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         Slot for external graph update
         :return:
         '''
-        pass
+        self.model.update_primary_graph(self._primary_graph)
 
     def update_secondary_graph(self):
         '''
         Slot for external graph update
         :return:
         '''
-        pass
-
-    def update_secondary_graph_slot(self):
-        '''
-        Slot for external graph update
-        :return:
-        '''
-        pass
+        self.model.update_secondary_graph(self._primary_graph, self._secondary_graph)
 
     def refresh_secondary_graph(self):
         '''
         Slot for when the selection of the secondary tree changes
         :return:
         '''
-        pass
+        self.model.refresh_secondary_graph(self._secondary_graph)
 
     def _update_primary_tree(self, index, old_indexes):
         '''
@@ -298,22 +190,17 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         '''
 
         # Update the graph with the external call
-        primary_graph = self.update_primary_graph()
-        self._primary_graph = primary_graph
-        if not primary_graph:
-            return
-
+        self.update_primary_graph()
         # Build model
-        self._model = layerGraphModel.LayerGraphModel(self._primary_graph)
+        self._primary_graph_model = self.model.GraphModel(self._primary_graph)
         # Set model to the tree
-        self._setupTreeView.setModel(self._model)
+        self._setupTreeView.setModel(self._primary_graph_model)
 
     def update_secondary(self, indexes=None):
         '''
         Populate secondary tree
         :return:
         '''
-
         indexes = self._secondary_setupTreeView.selectedIndexes()
         seleced_indexes = []
         row = None
@@ -327,21 +214,19 @@ class CentralTabWidget(QtWidgets.QTabWidget):
             seleced_indexes.append((row, column))
 
         # Update the graph with the external call
-        secondary_graph = self.update_secondary_graph()
-        self._secondary_graph = secondary_graph
-        if not secondary_graph:
-            return
+        self.update_secondary_graph()
 
         # Build model
-        self._secondary_model = layerGraphModel.LayerGraphModel(self._secondary_graph)
+        # Build model
+        self._secondary_graph_model = self.model.GraphModel(self._secondary_graph)
         # Set model to the tree
-        self._secondary_setupTreeView.setModel(self._secondary_model)
+        self._secondary_setupTreeView.setModel(self._secondary_graph_model)
 
         # Reselected the previously selected nodes if the row and column are still valid
         sel_model = self._secondary_setupTreeView.selectionModel()
         for index_data in seleced_indexes:
             row, column = index_data
-            index = self._secondary_model.index(row, column)
+            index = self._secondary_graph_model.index(row, column)
             if index:
                 sel_model.select(index, QtCore.QItemSelectionModel.Select)
 
@@ -361,21 +246,18 @@ class CentralTabWidget(QtWidgets.QTabWidget):
             selected_indexes.append((row, column))
 
         # Update the graph with the external call
-        primary_graph = self.update_primary_graph()
-        self._primary_graph = primary_graph
-        if not primary_graph:
-            return
+        self.update_primary_graph()
 
         # Build model
-        self._model = layerGraphModel.LayerGraphModel(self._primary_graph)
+        self._primary_graph_model = self.model.GraphModel(self._primary_graph)
         # Set model to the tree
-        self._setupTreeView.setModel(self._model)
+        self._setupTreeView.setModel(self._primary_graph_model)
 
         # Reselected the previously selected nodes if the row and column are still valid
         sel_model = self._setupTreeView.selectionModel()
         for index_data in selected_indexes:
             row, column = index_data
-            index = self._model.index(row, column)
+            index = self._primary_graph_model.index(row, column)
             if index:
                 sel_model.select(index, QtCore.QItemSelectionModel.Select)
 
@@ -398,21 +280,21 @@ class CentralTabWidget(QtWidgets.QTabWidget):
         Populates the secondary tree
         '''
         # Update the graph
-        nodes = self._selectedNodeList(self._setupTreeView, self._model)
+        nodes = self._selectedNodeList(self._setupTreeView, self._primary_graph_model)
         self._primary_graph.setSelectedNodes(nodes)
         self.update_secondary_graph()
         if not self._secondary_graph:
             return
 
         # Build the model
-        self._secondary_model = layerGraphModel.LayerGraphModel(self._secondary_graph)
+        self._secondary_graph_model = self.model.GraphModel(self._secondary_graph)
 
         # Set the model to the tree
-        self._secondary_setupTreeView.setModel(self._secondary_model)
+        self._secondary_setupTreeView.setModel(self._secondary_graph_model)
 
     def _secondary_tree_selection_change(self):
         # Update selected nodes on primary graph
-        nodes = self._selectedNodeList(self._secondary_setupTreeView, self._secondary_model)
+        nodes = self._selectedNodeList(self._secondary_setupTreeView, self._secondary_graph_model)
         self._secondary_graph.setSelectedNodes(nodes)
         self.refresh_secondary_graph()
 
@@ -424,7 +306,7 @@ class CentralTabWidget(QtWidgets.QTabWidget):
     def primary_tree_clicked(self):
         # Update selected nodes on primary graph
         clicked = self._primary_graph.getClicked()
-        nodes = self._selectedNodeList(self._setupTreeView, self._model)
+        nodes = self._selectedNodeList(self._setupTreeView, self._primary_graph_model)
         self._primary_graph.setSelectedNodes(nodes)
         if clicked:
             clicked()
@@ -445,13 +327,12 @@ class CentralTabWidget(QtWidgets.QTabWidget):
 
         # Initialize menu if one is not passed
         if not menu:
-            menu = mix.ui.radialMenu.RadialMenu()
+            menu = mix.ui.radial_menu.RadialMenu()
             menu.rightClickConnect(parentWidget)
 
         for n in item_list:
-            item = mix.ui.radialMenu.RadialMenuItem(position=n['position'], text=n['text'])
+            item = mix.ui.radial_menu.RadialMenuItem(position=n['position'], text=n['text'])
             item.connect(n['func'])
             menu.addItem(item)
 
         return(menu)
-

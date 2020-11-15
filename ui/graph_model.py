@@ -3,16 +3,17 @@ UI models
 '''
 from mix.ui import *
 
-#Japeto modules
-from mix import pGraph, pNode
+#mix modules
+from mix import mix_node
 
-class LayerGraphModel(QtCore.QAbstractItemModel):
+class GraphModel(QtCore.QAbstractItemModel):
     NodeRole = QtCore.Qt.UserRole
-    def __init__(self, graph, parent = None):
-        super(LayerGraphModel, self).__init__(parent)
-        
+    def __init__(self, graph, parent=None):
+        super(GraphModel, self).__init__(parent)
+
         self._graph = graph
-        self._rootNode = pNode.PNode('root')
+        self._rootNode = mix_node.MixNode('root')
+        rootNodes = graph.rootNodes() or list()
         self._rootNode.addChildren(graph.rootNodes())
 
     def itemFromIndex( self, index ):

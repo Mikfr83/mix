@@ -1,28 +1,29 @@
-import mix.pObject as pObject
-import mix.pNode as pNode
+import mix.mix_object as mix_object
+import mix.mix_node as mix_node
 
-class PGraph(pObject.PObject):
+
+class MixGraph(mix_object.MixObject):
     def __init__(self, name):
         '''
         This constructor for the class sets up the base graph attributes.
-        
+
         :param name: Name of the graph
         :type name: str
         '''
-        super(PGraph,self).__init__(name)
-        
+        super(MixGraph, self).__init__(name)
+
         self._rootNodes = list()
         self._nodes = list()
 
     def rootNodes(self):
         return self._rootNodes
 
-    def setToRoot(self,node):
+    def setToRoot(self, node):
         '''
         set the node to the root of the graph
 
         :param node: Node you wish to put to the root.
-        :type node: PNode
+        :type node: MixNode
         '''
         if node.getParent():
             node.getParent().removeChild(node)
@@ -30,27 +31,27 @@ class PGraph(pObject.PObject):
             return
 
         self._rootNodes.append(node)
-        
-    def addNode(self, node, parent = None, index = None):
-        #if name passed in instead of node
+
+    def addNode(self, node, parent=None, index=None):
+        # if name passed in instead of node
         if isinstance(node, basestring):
-            node = pNode.PNode(node, parent)
+            node = mix_node.MixNode(node, parent)
         elif parent:
             if node in self._rootNodes:
                 self.removeNode(node)
             node.setParent(parent)
-        
+
         if parent and index != None:
             parent.moveChild(node, index)
         elif not parent and index != None:
-            self._rootNodes.insert(index,node)
+            self._rootNodes.insert(index, node)
         elif not parent and index == None:
             self._rootNodes.append(node)
         elif parent and index == None:
             parent.addChild(node)
-        
+
         node.setNiceName(node.getName())
-        
+
         return node
 
     def clearNodes(self):
@@ -60,43 +61,43 @@ class PGraph(pObject.PObject):
     def removeNode(self, node):
         if node in self._rootNodes:
             self._rootNodes.pop(node.index())
-        
+
         if node.getParent():
             node.getParent().removeChild(node)
-        
+
     def nodeCount(self):
         count = len(self._rootNodes)
-        
+
         for node in self._rootNodes:
             count += node.descendantCount()
-            
+
         return count
-    
+
     def getNodes(self):
         nodes = list()
         for node in self._rootNodes:
             nodes.append(node)
             nodes.extend(node.descendants())
-            
+
         return nodes
-    
-    def log(self, tabLevel = -1):
+
+    def log(self, tabLevel=-1):
         '''
         Logs the whole graph. Returns the whole graph in a string
-        
+
         :param tabLevel: This shows how many tabs in we start
         :type tabLevel: int
         '''
         output = "\n"
-        tabLevel += 1 #add to the tabLevel
-        
-        #tab in based on the tabLevel
+        tabLevel += 1  # add to the tabLevel
+
+        # tab in based on the tabLevel
         for i in range(tabLevel):
             output += "\t"
-        
+
         for node in self._rootNodes:
             output += node.log(tabLevel)
-        
+
         tabLevel -= 1
         output += '\n'
         return output
@@ -107,9 +108,9 @@ class PGraph(pObject.PObject):
             nodeNames.append(node.getName())
             for child in node.descendants():
                 nodeNames.append(child.getName())
-            
+
         return nodeNames
-    
+
     def getNodeByName(self, name):
         for node in self.getNodes():
             if name == node.getName():
@@ -120,14 +121,14 @@ class PGraph(pObject.PObject):
         '''
         This will get the node by passing a path to the method.
 
-        .. example:: 
+        .. example::
             getNodeByPath("|animRig|build|body|l_leg|l_foot")
 
         :param path: Path you want to use to retrieve the node you're looking for.
         :type path: str
 
         :return: Returns the node at that given path
-        :rtype: PNode | None
+        :rtype: MixNode | None
         '''
         if not isinstance(path, basestring):
             raise TypeError('{} must be a string that represents a path to a node.'.format(path))

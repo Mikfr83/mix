@@ -4,9 +4,8 @@ Fields that are used in our UI
 #.. todo: Make a field specifically for lists
 '''
 from mix.ui import *
-import mix.ui.layerGraphModel as layerGraphModel
-import mix.pGraph as pGraph
-import mix.pNode as pNode
+import mix.ui.graph_model as graph_model
+import mix.mix_graph as pGraph
 
 class BaseField(QtWidgets.QWidget):
     font = QtGui.QFont("Arial", 12)
@@ -136,7 +135,7 @@ class ListField(BaseField):
         for value in self.value():
             self.listGraph.addNode(value)
         
-        self._model = layerGraphModel.LayerGraphModel(self.listGraph)
+        self._model = graph_model.GraphModel(self.listGraph)
         self._layout = QtWidgets.QHBoxLayout()
         self._listView = QtWidgets.QListView()
         self._listView.setModel(self._model)
@@ -204,7 +203,7 @@ class ListField(BaseField):
             self.setValue(self.value().append(value))
             
         self.listGraph.addNode(value)
-        self._model = layerGraphModel.LayerGraphModel(self.listGraph)
+        self._model = graph_model.GraphModel(self.listGraph)
         self._listView.setModel(self._model)
         
     def __addDialog(self,*args):

@@ -1,6 +1,6 @@
-import mix.pGraph as pGraph
+import mix.mix_graph as mix_graph
 
-class UGraph(pGraph.PGraph):
+class GraphTreeItem(mix_graph.MixGraph):
     def __init__(self, name):
         '''
         This constructor for the class sets up the graph UI attributes.
@@ -8,7 +8,7 @@ class UGraph(pGraph.PGraph):
         :param name: Name of the graph
         :type name: str
         '''
-        super(UGraph,self).__init__(name)
+        super(GraphTreeItem,self).__init__(name)
 
         # UI
         self._selected_nodes = list()
