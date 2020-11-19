@@ -60,6 +60,7 @@ import mix.ui.input_dialog
 reload(mix.ui.input_dialog)
 
 import mix.ui.main_window as main_window
+main_window.MainWindow.delete_callbacks()
 reload(main_window)
 
 

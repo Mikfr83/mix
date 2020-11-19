@@ -23,7 +23,7 @@ def update_primary_graph(primary_graph):
     '''
     pass
 
-def update_secondary_graph(secondary_graph):
+def update_secondary_graph(primary_graph, secondary_graph):
     '''
     Abstract method for updating the secondary graph.
     '''

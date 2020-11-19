@@ -10,6 +10,7 @@ import maya.api.OpenMaya as om2
 import model_manager
 import mix.ui.graph_tree_item as graph_tree_item
 import mix.ui.graph_widget as graph_widget
+
 # -------------------------------
 # MAIN WINDOW
 # -------------------------------
@@ -41,10 +42,10 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.setObjectName(self.window_name)
         self.tabWidget = QtWidgets.QTabWidget(self)
         self.psdWidget = graph_widget.GraphWidget(psd_graph_list[0], psd_graph_list[1], model=model_manager.PSD_MODEL)
-        #self.weightsWidget = graph_widget.GraphWidget(weights_graph_list[0], weights_graph_list[1],
-        #                                              model=model_manager.WEIGHTS_MODEL)
+        self.weightsWidget = graph_widget.GraphWidget(weights_graph_list[0], weights_graph_list[1],
+                                                      model=model_manager.WEIGHTS_MODEL)
         self.tabWidget.addTab(self.psdWidget, 'PSD')
-        #self.tabWidget.addTab(self.weightsWidget, 'Weights')
+        self.tabWidget.addTab(self.weightsWidget, 'Weights')
         self.mainLayout = QtWidgets.QVBoxLayout(self)
 
         # add menu and tool bar to window
@@ -57,29 +58,29 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.mainLayout.addWidget(self.tabWidget)
         self.setLayout(self.mainLayout)
         self.resize(1200, 1200)
-        '''
         id = om2.MEventMessage.addEventCallback('SelectionChanged', self.updateDeformerList)
         MainWindow.callback_id_list.append(id)
-        '''
 
     def deleteControl(self, control):
+
         if mc.workspaceControl(control, q=True, exists=True):
             mc.workspaceControl(control, e=True, close=True)
             mc.deleteUI(control, control=True)
-            for id in MainWindow.callback_id_list:
-                MainWindow.callback_id_list.pop(MainWindow.callback_id_list.index(id))
-                om2.MMessage.removeCallback(id)
+            self.delete_callbacks()
 
     def closeEvent(self, event):
         super(MainWindow, self).closeEvent(event)
-        for id in MainWindow.callback_id_list:
-            MainWindow.callback_id_list.pop(MainWindow.callback_id_list.index(id))
-            om2.MMessage.removeCallback(id)
-    '''
+        self.delete_callbacks()
+
     def updateDeformerList(self, *args):
         self.weightsWidget.update_primary()
-    '''
 
+    @staticmethod
+    def delete_callbacks():
+        if MainWindow.callback_id_list:
+            for id in MainWindow.callback_id_list:
+                MainWindow.callback_id_list.pop(MainWindow.callback_id_list.index(id))
+                om2.MMessage.removeCallback(id)
 
 def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph_tree_item.GraphTreeItem('Poses')],
            weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'), graph_tree_item.GraphTreeItem('Maps')]):
