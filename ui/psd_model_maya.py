@@ -7,6 +7,7 @@ import showtools.maya.blendShape as rig_blendShape
 from functools import partial
 import mix.ui.input_dialog
 import showtools.maya.attr as rig_attribute
+import showtools.maya.delta_blend as rig_delta_blend
 
 # Pointer to secondary update function
 update_secondary = None
@@ -546,6 +547,20 @@ def duplicate_shape(pose_graph):
         mc.select(dupes)
 
 
+def delta_blend(pose_graph):
+    sel_nodes = pose_graph.getSelectedNodes()
+    for node in sel_nodes:
+
+        interp = node.getAttributeByName('interp').getValue()
+        pose = node.getAttributeByName('full_name').getValue()
+        bs = rig_psd.getDeformer(interp)
+        geo = get_pose_geo_path(bs, interp, pose)
+        if not mc.objExists(geo):
+            continue
+        rig_psd.goToPose(interp, pose)
+        rig_delta_blend.delta_blend(geo)
+
+
 def isolate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     geos = []
@@ -903,6 +918,7 @@ def build_pose_graph(interp_graph, pose_graph):
         {'position': 'W', 'text': 'Enable Toggle', 'func': partial(enable_toggle, pose_graph)},
         {'position': 'S', 'text': 'Apply', 'func': partial(apply_pose, interp_graph, pose_graph)},
         {'position': 'NE', 'text': 'Mirror Deltas', 'func': partial(mirror_delta, pose_graph)},
+        {'position': 'NW', 'text': 'Delta Blend', 'func': partial(delta_blend, pose_graph)},
         {'position': 'SE', 'text': 'Isolate Toggle', 'func': partial(isolate_shape, pose_graph)},
         {'position': '', 'text': 'Delete Deltas', 'func': partial(delete_deltas, interp_graph, pose_graph)},
         {'position': '', 'text': '-------------', 'func': None},
