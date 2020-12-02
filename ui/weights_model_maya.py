@@ -21,8 +21,10 @@ def update_primary_graph(primary_graph):
         mix_deformer_stack.reverse()
         for name in mix_deformer_stack:
             node = primary_graph.addNode(name)
+            node.addAttribute('full_name', name)
             if name.endswith(DSET_SUFFIX):
                 node.addAttribute(DSET_SUFFIX, '')
+                node.setName(name.replace(DSET_SUFFIX, ''))
             if deformer_set_dict.has_key(name):
                 for child_name in deformer_set_dict[name]:
                     child_node = primary_graph.addNode(child_name, node)
@@ -47,9 +49,10 @@ def init_primary_graph(primary_graph):
     # Radial menu Setup
     primary_graph.setRadialMenuList([
         {'position': 'W', 'text': 'Toggle Envelope', 'func': partial(toggle_deformer, primary_graph)},
-        {'position': 'S', 'text': 'Select Deformer', 'func': partial(select_deformer, primary_graph)}])
+        {'position': 'S', 'text': 'Select Deformer', 'func': partial(select_deformer, primary_graph)}
+    ])
 '''
-    {'position': 'W', 'text': 'Enable Toggle', 'func': partial(enable_interpolator_toggle, interp_graph)},
+    
     {'position': 'E', 'text': 'All Neutral Pose', 'func': partial(set_all_neutral, interp_graph)},
     {'position': 'NW', 'text': 'Add Pose Control', 'func': partial(add_pose_control, interp_graph)},
     {'position': 'S', 'text': 'Select Interpolator', 'func': partial(select_interpolator, interp_graph)},
@@ -59,6 +62,24 @@ def init_primary_graph(primary_graph):
     {'position': '', 'text': 'View Pose Controls', 'func': partial(view_pose_controls, interp_graph, True)},
 '''
 
+def init_secondary_graph(primary_graph, secondary_graph):
+    '''
+    :param primary_graph: The graph with the deformer list
+    :param secondary_graph: The graph with the map list
+    :return:
+    '''
+    # Connect Click functions
+    secondary_graph.setClicked(partial(map_clicked, secondary_graph))
+    secondary_graph.setDoubleClicked(partial(map_double_clicked, secondary_graph))
+
+    # Radial menu Setup
+    secondary_graph.setRadialMenuList([
+        {'position': 'E', 'text': 'Paint Map', 'func': partial(paint_map, primary_graph, secondary_graph)}
+    ])
+
+    # Live status
+
+    return (secondary_graph)
 
 def toggle_deformer(primary_graph):
     '''
@@ -98,3 +119,40 @@ def select_deformer(primary_graph):
                 mc.select(clear=True)
                 current_selection = None
             mc.select(node_name, add=True)
+
+def paint_map(primary_graph, secondary_graph):
+    '''
+    :param primary_graph: The graph with the deformer list
+    :param secondary_graph: The graph with the map list
+    :return:
+    '''
+    print 'something is happening'
+    mc.undoInfo(openChunk=1)
+    try:
+        sel_nodes = secondary_graph.getSelectedNodes()
+        for node in sel_nodes:
+            map = node.getName()
+            print map
+    except:
+        traceback.print_exc()
+    mc.undoInfo(closeChunk=1)
+
+def map_clicked(secondary_graph):
+    '''
+    :param secondary_graph:
+    :return:
+    '''
+    print "Map double clicked"
+
+def map_double_clicked(secondary_graph):
+    '''
+    :param secondary_graph:
+    :return:
+    '''
+    print "map double clicked"
+
+def update_secondary_graph(primary_graph, secondary_graph):
+    '''
+    Wrapper to call build_pose_graph
+    '''
+    print "this is where we update the map widget"

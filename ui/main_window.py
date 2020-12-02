@@ -5,12 +5,12 @@ from mix.ui import *
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 import maya.cmds as mc
 import maya.api.OpenMaya as om2
+import maya.api.OpenMayaUI as omui2
 
 # mix modules
 import model_manager
 import mix.ui.graph_tree_item as graph_tree_item
 import mix.ui.graph_widget as graph_widget
-
 # -------------------------------
 # MAIN WINDOW
 # -------------------------------
@@ -62,7 +62,6 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         MainWindow.callback_id_list.append(id)
 
     def deleteControl(self, control):
-
         if mc.workspaceControl(control, q=True, exists=True):
             mc.workspaceControl(control, e=True, close=True)
             mc.deleteUI(control, control=True)
@@ -94,8 +93,17 @@ def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph
     :return: The instance of the window that was created.
     :rtype: QDockWidget | QMainWindow
     '''
-    main_window = MainWindow(psd_graph_list, weights_graph_list)
-    main_window.show(dockable=True)
+    # Create a workspace control for the mixin widget by passing all the needed parameters. See workspaceControl command documentation for all available flags.
+    main_window = MainWindow(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'),
+                                                  graph_tree_item.GraphTreeItem('Poses')],
+                                  weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'),
+                                                      graph_tree_item.GraphTreeItem('Maps')])
+    main_window.show(dockable=True, area='right', floating=False)
+    mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name),
+                        e=True,
+                        ttc=["AttributeEditor", -1],
+                        wp="preferred",
+                        mw=200)
     main_window.psdWidget.model.update_secondary = main_window.psdWidget.update_secondary
     main_window.psdWidget.model.update_primary = main_window.psdWidget.update_primary
 
