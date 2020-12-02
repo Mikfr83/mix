@@ -1,4 +1,4 @@
-import showtools.maya.common as common
+import openrig.shared.common as common
 import model_manager
 from mix.ui import *
 class InputDialog(QtWidgets.QWidget):
