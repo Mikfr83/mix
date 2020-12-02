@@ -1,13 +1,13 @@
 import mix
 from mix.ui import *
 from mix.ui.psd_model import *
-import showtools.maya.psd as rig_psd
-import showtools.maya.common as common
-import showtools.maya.blendShape as rig_blendShape
+import openrig.maya.psd as rig_psd
+import openrig.shared.common as common
+import openrig.maya.blendShape as rig_blendShape
 from functools import partial
 import mix.ui.input_dialog
-import showtools.maya.attr as rig_attribute
-import showtools.maya.delta_blend as rig_delta_blend
+import openrig.maya.attr as rig_attribute
+import openrig.maya.delta_blend as rig_delta_blend
 
 # Pointer to secondary update function
 update_secondary = None

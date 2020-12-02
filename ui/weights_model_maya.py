@@ -3,8 +3,8 @@ Abstract model for default implementation
 '''
 from mix.ui.weights_model import *
 from functools import partial
-import showtools.maya.common as common
-import showtools.maya.deformer as rig_deformer
+import openrig.shared.common as common
+import openrig.maya.deformer as rig_deformer
 
 DSET_SUFFIX = '_dset'
 
