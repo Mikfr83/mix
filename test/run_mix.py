@@ -44,6 +44,9 @@ reload(model_manager)
 # =========================================================================
 # reload view items
 # =========================================================================
+import mix.ui.input_dialog
+reload(mix.ui.input_dialog)
+
 import mix.ui.radial_menu as radial_menu
 reload(radial_menu)
 
@@ -56,13 +59,9 @@ reload(mix.ui.graph_tree_view)
 import mix.ui.graph_widget
 reload(mix.ui.graph_widget)
 
-import mix.ui.input_dialog
-reload(mix.ui.input_dialog)
-
 import mix.ui.main_window as main_window
 main_window.MainWindow.delete_callbacks()
 reload(main_window)
-
 
 def launch():
     main_window.launch()
