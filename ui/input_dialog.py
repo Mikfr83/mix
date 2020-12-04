@@ -54,14 +54,14 @@ class TwistTableDialog(QtWidgets.QDialog):
                 row_index += 1
 
     def accept(self):
-        super(TwistTableDialog, self).accept()
         for interp in self.interp_list:
             for i, combo_box in enumerate(self.combo_dict[interp]):
-                model_manager.PSD_MODEL.get_current_twist_value(interp, i)
+                model_manager.PSD_MODEL.set_driver_twist_value(interp, i, combo_box.currentIndex())
+        self.close()
 
     def __get_driver_list(self, interp_list):
         driver_list = []
-        for interp in self.interp_list:
+        for interp in interp_list:
             driver_list.extend(model_manager.PSD_MODEL.get_drivers(interp))
 
         return driver_list
