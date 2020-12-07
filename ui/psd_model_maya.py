@@ -62,7 +62,9 @@ def apply_pose(interp_graph, pose_graph):
 
 def get_pose_geo_path(bs, interp, pose):
     interp_name = rig_psd.getInterpNiceName(interp) + '_interp'
-    group_name = bs.replace('psd', 'grp')
+    group_name = rig_psd.getGroup(interp)+'_grp'
+    geo = mc.deformer(bs, q=1, g=1)
+    geo = mc.listRelatives(geo, p=1, path=1)[0].split('|')[-1]
     full_path = '{}|{}|{}'.format(group_name, interp_name, pose)
     return(full_path)
 
