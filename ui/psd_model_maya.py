@@ -51,10 +51,11 @@ def target_double_clicked(pose_graph):
 
 def apply_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
-    sel_geo = mc.ls(sl=1)
-    if not sel_geo:
-        return
-    sel_geo = sel_geo[0]
+    sel_geo = mc.ls(sl=1, l=True)
+    print sel_geo
+    selection_length = len(sel_geo)
+    if selection_length == 1:
+        sel_geo = sel_geo[0]
 
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
@@ -63,9 +64,12 @@ def apply_pose(interp_graph, pose_graph):
         for bs in blendshape_list:
             rig_psd.goToPose(interp, pose)
             pose_geo = get_pose_geo_path(bs, interp, pose)
-            if len(sel_geo) == 1:
+            print 'selected_geo----> ', sel_geo
+            print 'pose_geo----> ', pose_geo
+            if sel_geo == pose_geo and selection_length == 1:
                 pose_geo = sel_geo
-            if mc.objExists(pose_geo):
+                rig_psd.applyPoseSymmetry(interp, pose, bs, pose_geo)
+            elif selection_length >= 2:
                 rig_psd.applyPoseSymmetry(interp, pose, bs, pose_geo)
 
 def get_pose_geo_path(bs, interp, pose):
@@ -73,7 +77,7 @@ def get_pose_geo_path(bs, interp, pose):
     group_name = rig_psd.getGroup(interp)+'_grp'
     geo = mc.deformer(bs, q=1, g=1)
     geo = mc.listRelatives(geo, p=1, path=1)[0].split('|')[-1]
-    full_path = '{}|{}|{}_{}'.format(group_name, interp_name, geo, pose)
+    full_path = '|{}|{}|{}_{}'.format(group_name, interp_name, geo, pose)
     return(full_path)
 
 def set_all_neutral(interp_graph):
@@ -404,7 +408,6 @@ def set_interpolation(interp_list):
         mc.setAttr('{}.enableRotation'.format(interp), interpolation_widget.track_rotation_field.value())
         mc.setAttr('{}.enableTranslation'.format(interp), interpolation_widget.track_translation_field.value())
         mc.setAttr('{}.interpolation'.format(interp), interpolation_widget.interpolation_combo_box.currentIndex())
-
 
 def rename_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
