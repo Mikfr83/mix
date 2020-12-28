@@ -1,6 +1,8 @@
 import openrig.shared.common as common
 import model_manager
 from mix.ui import *
+import fields
+
 class InputDialog(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(InputDialog, self).__init__(parent)
@@ -68,3 +70,43 @@ class TwistTableDialog(QtWidgets.QDialog):
 
     def _combo_box_wheel_event(self, event):
         return
+
+class InterpolationDialog(QtWidgets.QDialog):
+    accept_signal = QtCore.Signal()
+    def __init__(self, parent=None):
+        super(InterpolationDialog, self).__init__(parent)
+        self.interp_list = list()
+        self.widget = QtWidgets.QWidget()
+        self.widget.setGeometry(QtCore.QRect(220, 100, 411, 392))
+        widget_layout = QtWidgets.QVBoxLayout()
+        self.regularization_field = fields.FloatField('Regularization: ', 0.0000)
+        self.regularization_field.setText(0.0000)
+        self.smoothing_field = fields.FloatField('Output Smoothing: ', 0.0000)
+        self.smoothing_field.setText(0.0000)
+        self.negative_weights_field = fields.BooleanField('Allow Negative Weights:', 1)
+        self.track_rotation_field = fields.BooleanField('Track Rotation:', 1)
+        self.track_translation_field = fields.BooleanField('Track Translation:', 0)
+        widget_layout.addStretch()
+        widget_layout.addWidget(self.regularization_field)
+        widget_layout.addWidget(self.smoothing_field)
+        widget_layout.addWidget(self.negative_weights_field)
+        widget_layout.addWidget(self.track_rotation_field)
+        widget_layout.addWidget(self.track_translation_field)
+        widget_layout.setAlignment(QtCore.Qt.AlignLeft)
+        widget_layout.addStretch()
+
+        self.widget.setLayout(widget_layout)
+        okay_button = QtWidgets.QPushButton('OK')
+        okay_button.clicked.connect(self.accept)
+
+        layout = QtWidgets.QVBoxLayout()
+        layout.addWidget(self.widget)
+        layout.addWidget(okay_button)
+        self.setLayout(layout)
+
+    def set_interps(self, interp_list):
+        self.interp_list = interp_list
+
+    def accept(self):
+        model_manager.PSD_MODEL.set_interpolation(self.interp_list)
+        self.close()

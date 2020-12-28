@@ -15,7 +15,9 @@ update_primary = None
 update_secondary = None
 # Pointer to qDialog
 g_dialog = mix.ui.input_dialog.InputDialog()
-
+interpolation_widget = mix.ui.input_dialog.InterpolationDialog()
+interpolation_widget.setWindowTitle('interpolation')
+interpolation_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 # temp widgets
 driver_widget = mix.ui.input_dialog.TwistTableDialog()
 driver_widget.setWindowTitle('Drivers')
@@ -33,6 +35,7 @@ def interp_clicked(interp_graph):
     view_pose_controls(interp_graph)
     view_drivers(interp_graph)
     view_drivens(interp_graph)
+    edit_interpolation(interp_graph)
 
 def target_clicked(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -367,6 +370,39 @@ def add_pose(interp_graph, pose_graph):
                 rig_psd.addShape(interp, text, blendShape=blendshape_list)
 
     update_secondary()
+
+def edit_interpolation(interp_graph, show=False):
+    '''
+    This will edit the interpolation for the selected interps
+    :param interp_graph:
+    :return:
+    '''
+    sel_nodes = interp_graph.getSelectedNodes()
+
+    interpolation_widget.accept_signal.connect(set_interpolation)
+    interpolation_widget.set_interps([node.getAttributeByName('full_name').getValue() for node in sel_nodes])
+    selected_nodes = interp_graph.getSelectedNodes()
+
+    interp = sel_nodes[0].getAttributeByName('full_name').getValue()
+    interpolation_widget.regularization_field.setText(mc.getAttr('{}.regularization'.format(interp)))
+    interpolation_widget.smoothing_field.setText(mc.getAttr('{}.outputSmoothing'.format(interp)))
+    interpolation_widget.negative_weights_field.setValue(mc.getAttr('{}.allowNegativeWeights'.format(interp)))
+    interpolation_widget.track_rotation_field.setValue(mc.getAttr('{}.enableRotation'.format(interp)))
+    interpolation_widget.track_translation_field.setValue(mc.getAttr('{}.enableTranslation'.format(interp)))
+
+    if show:
+        interpolation_widget.show()
+    else:
+        interpolation_widget.repaint()
+
+def set_interpolation(interp_list):
+    for interp in mc.ls(interp_list):
+        mc.setAttr('{}.regularization'.format(interp), float(interpolation_widget.regularization_field.value()))
+        mc.setAttr('{}.outputSmoothing'.format(interp), float(interpolation_widget.smoothing_field.value()))
+        mc.setAttr('{}.allowNegativeWeights'.format(interp), interpolation_widget.negative_weights_field.value())
+        mc.setAttr('{}.enableRotation'.format(interp), interpolation_widget.track_rotation_field.value())
+        mc.setAttr('{}.enableTranslation'.format(interp), interpolation_widget.track_translation_field.value())
+
 
 def rename_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -811,6 +847,7 @@ def build_interp_graph(interp_graph):
     interp_graph.setRadialMenuList([
         {'position': 'N', 'text': 'Add Interpolator', 'func': partial(add_interpolator, interp_graph)},
         {'position': 'NW', 'text': 'Rename Interpolator', 'func': partial(rename_interpolator, interp_graph)},
+        {'position': 'NE', 'text': 'Edit Interpolation', 'func': partial(edit_interpolation, interp_graph, True)},
         {'position': 'W', 'text': 'Enable Toggle', 'func': partial(enable_interpolator_toggle, interp_graph)},
         {'position': 'E', 'text': 'All Neutral Pose', 'func': partial(set_all_neutral, interp_graph)},
         {'position': 'S', 'text': 'Select Interpolator', 'func': partial(select_interpolator, interp_graph)},
@@ -820,11 +857,11 @@ def build_interp_graph(interp_graph):
         {'position': '', 'text': 'Select Drivers', 'func': partial(select_drivers, interp_graph)},
         {'position': '', 'text': 'View Drivers', 'func': partial(view_drivers, interp_graph, True)},
         {'position': '', 'text': '-------------', 'func': None},
-        {'position': '', 'text': 'Add Driven', 'func': partial(add_driven, interp_graph)},
-        {'position': '', 'text': 'View Drivens', 'func': partial(view_drivens, interp_graph, True)},
-        {'position': '', 'text': '-------------', 'func': None},
         {'position': '', 'text': 'Add Pose Control', 'func': partial(add_pose_control, interp_graph)},
         {'position': '', 'text': 'View Pose Controls', 'func': partial(view_pose_controls, interp_graph, True)},
+        {'position': '', 'text': '-------------', 'func': None},
+        {'position': '', 'text': 'Add Driven', 'func': partial(add_driven, interp_graph)},
+        {'position': '', 'text': 'View Drivens', 'func': partial(view_drivens, interp_graph, True)},
         {'position': '', 'text': '-------------', 'func': None},
 
     ])
