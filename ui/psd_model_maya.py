@@ -8,8 +8,10 @@ from functools import partial
 import mix.ui.input_dialog
 import openrig.maya.attr as rig_attribute
 import openrig.maya.delta_blend as rig_delta_blend
+import traceback
 
 # Pointer to secondary update function
+update_primary = None
 update_secondary = None
 # Pointer to qDialog
 g_dialog = mix.ui.input_dialog.InputDialog()
@@ -21,16 +23,19 @@ driver_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 pose_control_widget = QtWidgets.QListWidget()
 pose_control_widget.setWindowTitle('Pose Controls')
 pose_control_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+driven_widget = QtWidgets.QListWidget()
+driven_widget.setWindowTitle('Drivens')
+driven_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
 def interp_clicked(interp_graph):
     '''
     '''
     view_pose_controls(interp_graph)
     view_drivers(interp_graph)
-
+    view_drivens(interp_graph)
 
 def target_clicked(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
-
 
 def target_double_clicked(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -40,7 +45,6 @@ def target_double_clicked(pose_graph):
         pose = node.getAttributeByName('full_name').getValue()
         rig_psd.goToPose(interp, pose)
     update_secondary()
-
 
 def apply_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -52,20 +56,21 @@ def apply_pose(interp_graph, pose_graph):
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
-        bs = rig_psd.getDeformer(interp)
-        rig_psd.goToPose(interp, pose)
-        pose_geo = get_pose_geo_path(bs, interp, pose)
-        if len(sel_geo) == 1:
-            pose_geo = sel_geo
-        if mc.objExists(pose_geo):
-            rig_psd.applyPoseSymmetry(interp, pose, bs, pose_geo)
+        blendshape_list = rig_psd.getDrivenNodes(interp, pose)
+        for bs in blendshape_list:
+            rig_psd.goToPose(interp, pose)
+            pose_geo = get_pose_geo_path(bs, interp, pose)
+            if len(sel_geo) == 1:
+                pose_geo = sel_geo
+            if mc.objExists(pose_geo):
+                rig_psd.applyPoseSymmetry(interp, pose, bs, pose_geo)
 
 def get_pose_geo_path(bs, interp, pose):
     interp_name = rig_psd.getInterpNiceName(interp) + '_interp'
     group_name = rig_psd.getGroup(interp)+'_grp'
     geo = mc.deformer(bs, q=1, g=1)
     geo = mc.listRelatives(geo, p=1, path=1)[0].split('|')[-1]
-    full_path = '{}|{}|{}'.format(group_name, interp_name, pose)
+    full_path = '{}|{}|{}_{}'.format(group_name, interp_name, geo, pose)
     return(full_path)
 
 def set_all_neutral(interp_graph):
@@ -85,7 +90,6 @@ def set_all_neutral(interp_graph):
     except:
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
-
 
 def delete_interpolator(interp_graph):
     '''
@@ -109,7 +113,6 @@ def delete_interpolator(interp_graph):
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
-
 def delete_pose(interp_graph, pose_graph):
     mc.undoInfo(openChunk=1)
     try:
@@ -124,7 +127,6 @@ def delete_pose(interp_graph, pose_graph):
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
-
 def delete_deltas(interp_graph, pose_graph):
     mc.undoInfo(openChunk=1)
     try:
@@ -132,13 +134,13 @@ def delete_deltas(interp_graph, pose_graph):
         for node in sel_nodes:
             interp = node.getAttributeByName('interp').getValue()
             pose = node.getAttributeByName('full_name').getValue()
-            bs = rig_psd.getDeformer(interp)
-            if mc.objExists(bs+'.'+pose):
-                rig_blendShape.clearTargetDeltas(bs, pose)
+            blendshape_list = rig_psd.getDrivenNodes(interp)
+            for bs in blendshape_list:
+                if mc.objExists(bs+'.'+pose):
+                    rig_blendShape.clearTargetDeltas(bs, pose)
     except:
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
-
 
 def add_interpolator(interp_graph):
     '''
@@ -185,7 +187,12 @@ def add_interpolator(interp_graph):
 
         def _getBlendShape(message):
             # pull up the dialog box
-            text, ok = g_dialog.get_text('Blendshape', message, rig_psd.getDeformer(interp_list[0]))
+            if interp_list:
+                blendShape_list = rig_psd.getDrivenNodes(interp_list[0])
+            else:
+                blendshape_list = mc.ls(type='blendShape')
+
+            text, ok = g_dialog.get_text('Blendshape', message, blendShape_list[0])
             if not ok:
                 return
             if not text:
@@ -202,18 +209,27 @@ def add_interpolator(interp_graph):
         print('Adding Interpolator [ {} ]'.format(interp_text))
         # create the interpolator and make the connection to the blendshape attribute
         interp = rig_psd.addInterp(interp_name, group=group_name)
-        mc.connectAttr('{}.message'.format(blendshape_name), '{}.blendShape[0]'.format(interp), f=True)
+        # make sure the attributes exist on the node and then make the connections
+        if not mc.objExists('{}.driven_node'.format(interp)):
+            mc.addAttr(interp, ln='driven_node', at='message')
+        if not mc.objExists('{}.driven_node'.format(blendshape_name)):
+            mc.addAttr(blendshape_name, ln='driven_node', at='message', multi=True)
+
+        # make the connection between the interp and the blendShape.
+        driven_node_connections = mc.listConnections('{}.driven_node'.format(interp)) or []
+        if blendshape_name not in driven_node_connections:
+            index = mm.eval('getNextFreeMultiIndex "{}.driven_node" 0'.format(blendshape_name))
+            mc.connectAttr('{}.driven_node'.format(interp), '{}.driven_node[{}]'.format(blendshape_name, index), f=True)
         # pull up the dialog box
         group_node = interp_graph.getNodeByName(group_name)
         interp_node = interp_graph.addNode(interp_text, group_node)
         interp_node.addAttribute('full_name', interp)
-        interp_node.addAttribute('blendshape', blendshape_name)
+        interp_node.addAttribute('driven_node', blendshape_name)
 
         update_primary()
     except:
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
-
 
 def add_driver(interp_graph):
     '''
@@ -239,6 +255,58 @@ def add_driver(interp_graph):
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
+def add_driven(interp_graph):
+    '''
+    This will take what is selected in your scene and add the geometry as a driven. If your geometry currently doesn't
+    have a blendShape, we will create one and name it geoName_blendShape then add targets if any poses exist.
+
+    .. note::
+        This currently is only handling blendShape nodes. We're not handling numeric drivens in this function
+        at the moment.
+
+    :pram interp_graph: The graph where the interpolators live
+    :type interp_graph: UGraph
+    :return:
+    '''
+    mc.undoInfo(openChunk=1)
+    try:
+        sel_nodes = interp_graph.getSelectedNodes()
+        # selected nodes in maya session.
+        sel_list = mc.ls(sl=True)
+        if not sel_nodes or not sel_list:
+            return
+        # loop through each interp and add drivens to the poses if they don't currently exist.
+        for index, interp_name in enumerate(sel_nodes):
+            # Get a pose default name to enter in the text
+            interp = sel_nodes[index].getAttributeByName('full_name').getValue()
+            # get all of the driven nodes. Currently only doing blendShapes.
+            # TODO: this is currently only blendshapes. We will need to update this to act differently in the future.
+            driven_list = rig_psd.getDrivenNodes(interp)
+            geo_list = list()
+            for node in driven_list:
+                if mc.nodeType(node) == 'blendShape':
+                    geo_list = list(set(geo_list + mc.blendShape(node, q=True, g=True)))
+
+            # get the transforms for the shape nodes.
+            geo_list = [mc.listRelatives(geo, p=True)[0] for geo in geo_list]
+            add_list = [node for node in sel_list if not node in geo_list]
+
+            # if node in add_list has a blendShape with the same name as geometry, we will use that. Otherwise, we will make
+            # a blendShape that is front of chain using the name of geometry as a prefix
+            new_driven_list = list()
+            for geo in add_list:
+                # get the blendShapes on the geometry
+                geo_blendshape_list = rig_blendShape.getBlendShapes(geo)
+                blendshape_name = '{}_blendShape'.format(geo)
+                if not blendshape_name in geo_blendshape_list:
+                    mc.blendShape(blendshape_name, g=geo)
+
+                new_driven_list.append(blendshape_name)
+
+            rig_psd.addDriven(interp, new_driven_list)
+    except:
+        traceback.print_exc()
+    mc.undoInfo(closeChunk=1)
 
 def add_pose_control(interp_graph):
     '''
@@ -278,7 +346,6 @@ def add_pose_control(interp_graph):
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
-
 def add_pose(interp_graph, pose_graph):
     sel_nodes = interp_graph.getSelectedNodes()
     if not sel_nodes:
@@ -302,7 +369,7 @@ def add_pose(interp_graph, pose_graph):
 
     for node in sel_nodes:
         interp = node.getAttributeByName('full_name').getValue()
-        bs = rig_psd.getDeformer(interp)
+        blendshape_list = rig_psd.getDrivenNodes(interp)
         pose_name_list = rig_psd.getPoseNames(interp) or []
         if text in pose_name_list:
             mc.warning('[ {} ] Interp pose with name  [ {} ] already exists'.format(interp, text))
@@ -312,18 +379,21 @@ def add_pose(interp_graph, pose_graph):
             pose_name = rig_psd.addPose(interp, text)
             continue
 
-        if bs:
-            target_name_list = rig_blendShape.getTargetNames(bs) or []
-            if text in target_name_list:
-                mc.warning('blendShape target with name  [ {}.{} ] already exists'.format(bs, text))
-                continue
+        if blendshape_list:
+            for bs in blendshape_list:
+                target_name_list = rig_blendShape.getTargetNames(bs) or []
+                if text in target_name_list:
+                    mc.warning('blendShape target with name  [ {}.{} ] already exists'.format(bs, text))
+                    continue
 
-        print('[ {} ] Adding pose [ {} ]'.format(interp, text))
-        pose_name = rig_psd.addPose(interp, text)
-        rig_psd.addShape(interp, text, bs=bs)
+                print('[ {} ] Adding pose [ {} ]'.format(interp, text))
+                pose_name_list = rig_psd.getPoseNames(interp)
+                if text not in pose_name_list:
+                    rig_psd.addPose(interp, text)
+
+                rig_psd.addShape(interp, text, blendShape=blendshape_list)
 
     update_secondary()
-
 
 def rename_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -353,6 +423,34 @@ def rename_pose(interp_graph, pose_graph):
 
     update_secondary()
 
+def rename_interpolator(interp_graph):
+    '''
+    :param interp_graph:
+    :return:
+    '''
+    sel_nodes = interp_graph.getSelectedNodes()
+    if not sel_nodes:
+        return
+
+    # Get a pose default name to enter in the text
+    interp_name = sel_nodes[0].getName()
+    text, ok = g_dialog.get_text('Rename Interp', 'Interp name:', interp_name)
+
+    if not ok:
+        return
+
+    text = common.getValidName(text)
+
+    if not text:
+        return
+
+    print('Renaming pose [ {} ] --> [ {} ] '.format(interp_name, text))
+    rig_psd.renameInterpolator(sel_nodes[0].getAttributeByName('full_name').getValue(),
+                               '{}_poseInterpolator'.format(text))
+    sel_nodes[0].getAttributeByName('full_name').setValue('{}_poseInterpolator'.format(text))
+    sel_nodes[0].setName(text)
+
+    update_primary()
 
 def select_interpolator(interp_graph):
     '''
@@ -363,7 +461,6 @@ def select_interpolator(interp_graph):
         return
     # select the nodes
     mc.select(mc.ls([node.getAttributeByName('full_name').getValue() for node in selected_node_list]))
-
 
 def select_drivers(interp_graph):
     '''
@@ -379,7 +476,6 @@ def select_drivers(interp_graph):
         driver_list.extend(rig_psd.getDrivers(node.getAttributeByName('full_name').getValue()))
 
     mc.select(mc.ls(driver_list))
-
 
 def set_pose_falloff(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -422,7 +518,7 @@ def set_pose_type(interp_graph, pose_graph):
     index_name_list = ['swing and twist', 'swing', 'twist']
     default_index = default_item_list.index(index_name_list[pose_type_index])
     # pull up the dialog box
-    item, ok = g_dialog.get_item('Set Pose Type', 'Pose Type:', default_item_list,default_index)
+    item, ok = g_dialog.get_item('Set Pose Type', 'Pose Type:', default_item_list, default_index)
 
     if not ok or not item:
         return
@@ -470,7 +566,6 @@ def update_pose(pose_graph):
 
     update_secondary()
 
-
 def sync_pose(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     for node in sel_nodes:
@@ -479,7 +574,6 @@ def sync_pose(pose_graph):
         rig_psd.goToPose(interp, pose)
         rig_psd.updatePose(interp, pose)
     update_secondary()
-
 
 def mirror_delta(pose_graph):
     symmetry_state = mc.symmetricModelling(q=1, symmetry=1)
@@ -514,7 +608,6 @@ def live_toggle(pose_graph):
         else:
             pose_graph.clearLiveNode()
 
-
 def enable_toggle(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     if sel_nodes:
@@ -530,38 +623,36 @@ def enable_toggle(pose_graph):
                 rig_psd.enablePose(interp, pose)
     update_secondary()
 
-
 def duplicate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
-    dupes = []
+    dup_list = []
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
-        dup = rig_psd.duplicatePoseShape(interp, pose)
-        dupes.append(dup)
+        dup_list.extend(rig_psd.duplicatePoseShape(interp, pose) or list())
         node.editOn()
-    if dupes:
+
+    # unlock attributes on the transforms of duplicates.
+    if dup_list:
         attrs = ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz', 'v']
-        for dup in dupes:
+        for dup in dup_list:
             for a in attrs:
-                mc.setAttr(dup+'.'+a, l=0)
+                mc.setAttr(dup+'.'+a, l=False)
 
-        mc.select(dupes)
-
+        mc.select(dup_list)
 
 def delta_blend(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     for node in sel_nodes:
-
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
-        bs = rig_psd.getDeformer(interp)
-        geo = get_pose_geo_path(bs, interp, pose)
-        if not mc.objExists(geo):
-            continue
-        rig_psd.goToPose(interp, pose)
-        rig_delta_blend.delta_blend(geo)
-
+        blendshape_list = rig_psd.getDrivenNodes(interp)
+        for bs in blendshape_list:
+            geo = get_pose_geo_path(bs, interp, pose)
+            if not mc.objExists(geo):
+                continue
+            rig_psd.goToPose(interp, pose)
+            rig_delta_blend.delta_blend(geo)
 
 def isolate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
@@ -569,11 +660,12 @@ def isolate_shape(pose_graph):
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
-        bs = rig_psd.getDeformer(interp)
-        geo = get_pose_geo_path(bs, interp, pose)
+        blendshape_list = rig_psd.getDrivenNodes(interp)
+        for bs in blendshape_list:
+            geo = get_pose_geo_path(bs, interp, pose)
 
-        if mc.objExists(geo):
-            geos.append(geo)
+            if mc.objExists(geo):
+                geos.append(geo)
 
     currentPanel = getModelPanel()
 
@@ -607,7 +699,6 @@ def isolate_shape(pose_graph):
     mc.isolateSelect(currentPanel, update=True)
     mm.eval('updateModelPanelBar {}'.format(currentPanel))
 
-
 def getModelPanel():
     '''Return the active or first visible model panel.'''
 
@@ -622,7 +713,6 @@ def getModelPanel():
 
     return panel
 
-
 def getModelPanels():
     '''Return all the model panels visible so you can operate on them.'''
     panels = []
@@ -630,7 +720,6 @@ def getModelPanels():
         if mc.getPanel(typeOf=p) == 'modelPanel':
             panels.append(p)
     return panels
-
 
 # these are temporary functions
 """
@@ -693,6 +782,26 @@ def view_pose_controls(interp_graph, show=False):
     else:
         pose_control_widget.repaint()
 
+def view_drivens(interp_graph, show=False):
+    driven_widget.clear()
+    selected_nodes = interp_graph.getSelectedNodes()
+
+    if selected_nodes:
+        # driver list for the first selected interpolator.
+        node_attr = selected_nodes[0].getAttributeByName('full_name')
+        driven_list = []
+        if node_attr:
+            driven_list = rig_psd.getDrivenNodes(node_attr.getValue()) or []
+            driven_widget.addItems(driven_list)
+
+        driven_widget.setWindowTitle('{}: Drivens'.format(selected_nodes[0].getName()))
+    else:
+        driven_widget.addItems([])
+    if show:
+        driven_widget.show()
+    else:
+        driven_widget.repaint()
+
 def build_interp_graph(interp_graph):
     interp_graph.clearNodes()
 
@@ -713,30 +822,38 @@ def build_interp_graph(interp_graph):
             interp_name = rig_psd.getInterpNiceName(interp)
             interp_node = interp_graph.addNode(interp_name, group_node)
             interp_node.addAttribute('full_name', interp)
-            bs = rig_psd.getDeformer(interp)
-            interp_node.addAttribute('blendshape', bs)
-            if not mc.objExists('{}.enabled'.format(interp)):
-                mc.addAttr(interp, ln='enabled', at='bool', dv=1)
-                interp_node.enable()
-            else:
-                enabled_value = mc.getAttr('{}.enabled'.format(interp))
-                if enabled_value:
+            blendshape_list = rig_psd.getDrivenNodes(interp)
+            for bs in blendshape_list:
+                if not mc.objExists('{}.enabled'.format(interp)):
+                    mc.addAttr(interp, ln='enabled', at='bool', dv=1)
                     interp_node.enable()
                 else:
-                    interp_node.disable()
+                    enabled_value = mc.getAttr('{}.enabled'.format(interp))
+                    if enabled_value:
+                        interp_node.enable()
+                    else:
+                        interp_node.disable()
 
     # Radial menu Setup
     interp_graph.setRadialMenuList([
         {'position': 'N', 'text': 'Add Interpolator', 'func': partial(add_interpolator, interp_graph)},
-        {'position': 'NE', 'text': 'Add Driver', 'func': partial(add_driver, interp_graph)},
+        {'position': 'NW', 'text': 'Rename Interpolator', 'func': partial(rename_interpolator, interp_graph)},
         {'position': 'W', 'text': 'Enable Toggle', 'func': partial(enable_interpolator_toggle, interp_graph)},
         {'position': 'E', 'text': 'All Neutral Pose', 'func': partial(set_all_neutral, interp_graph)},
-        {'position': 'NW', 'text': 'Add Pose Control', 'func': partial(add_pose_control, interp_graph)},
         {'position': 'S', 'text': 'Select Interpolator', 'func': partial(select_interpolator, interp_graph)},
-        {'position': 'SW', 'text': 'Select Drivers', 'func': partial(select_drivers, interp_graph)},
-        {'position': 'SE', 'text': 'Delete Interpolator', 'func': partial(delete_interpolator, interp_graph)},
+        {'position': '', 'text': 'Delete Interpolator', 'func': partial(delete_interpolator, interp_graph)},
+        {'position': '', 'text': '-------------', 'func': None},
+        {'position': '', 'text': 'Add Driver', 'func': partial(add_driver, interp_graph)},
+        {'position': '', 'text': 'Select Drivers', 'func': partial(select_drivers, interp_graph)},
         {'position': '', 'text': 'View Drivers', 'func': partial(view_drivers, interp_graph, True)},
+        {'position': '', 'text': '-------------', 'func': None},
+        {'position': '', 'text': 'Add Driven', 'func': partial(add_driven, interp_graph)},
+        {'position': '', 'text': 'View Drivens', 'func': partial(view_drivens, interp_graph, True)},
+        {'position': '', 'text': '-------------', 'func': None},
+        {'position': '', 'text': 'Add Pose Control', 'func': partial(add_pose_control, interp_graph)},
         {'position': '', 'text': 'View Pose Controls', 'func': partial(view_pose_controls, interp_graph, True)},
+        {'position': '', 'text': '-------------', 'func': None},
+
     ])
 
     return (interp_graph)
@@ -764,10 +881,9 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
     # Get pose data
     for i in range(len(node_list)):
         node = node_list[i]
-        if node.getAttributeByName('blendshape'):
-            bs = node.getAttributeByName('blendshape').getValue() or ''
         if node.getAttributeByName('full_name'):
             interp = node.getAttributeByName('full_name').getValue()
+            blendshape_list = rig_psd.getDrivenNodes(interp)
             # (PINGS MAYA)
             try:
                 poses = rig_psd.getPoseNames(interp)
@@ -788,7 +904,7 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
                 # Get pose falloff
                 falloff = rig_psd.getPoseFalloff(interp, pose)
                 falloff = '{:.1f}'.format(round(falloff, 1))
-                pose_data_list.append([pose_weight, pose, falloff, interp, bs])
+                pose_data_list.append([pose_weight, pose, falloff, interp, blendshape_list])
 
     if not pose_data_list:
         return (pose_graph)
@@ -845,7 +961,7 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
     # Create graph nodes
     #
     for i in range(len(pose_data_list_pair)):
-        pose_weight, pose, falloff, interp, bs = pose_data_list_pair[i]
+        pose_weight, pose, falloff, interp, blendshape_list = pose_data_list_pair[i]
 
         display_name = '  '.join(pose_data_list_justified[i])
         if 'neutral' in pose:
@@ -857,8 +973,10 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
         pose_node.addAttribute('full_name', pose)
 
         # Live
-        if (bs, pose) in live_poses:
-            pose_graph.setLiveNode(pose_node)
+        for bs in blendshape_list:
+            if (bs, pose) in live_poses:
+                pose_graph.setLiveNode(pose_node)
+                break
 
         # Duplicated (PING)
         if rig_psd.getPoseShapes(interp, pose):
@@ -880,8 +998,10 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
         pose_node.addAttribute('full_name', pose)
 
         # Live
-        if (bs, pose) in live_poses:
-            pose_graph.setLiveNode(pose_node)
+        for bs in blendshape_list:
+            if (bs, pose) in live_poses:
+                pose_graph.setLiveNode(pose_node)
+                break
 
         # Duplicated (PING)
         if rig_psd.getPoseShapes(interp, pose):
@@ -899,7 +1019,6 @@ def refresh_pose_graph(interp_graph, pose_graph, keep_selection=False):
     view_pose_controls(interp_graph)
     view_drivers(interp_graph)
     return (pose_graph)
-
 
 def build_pose_graph(interp_graph, pose_graph):
     '''
@@ -948,7 +1067,7 @@ def secondary_tree_selection_change(pose_graph):
         pose = node.getAttributeByName('full_name').getValue()
         shape = rig_psd.getPoseShapes(interp, pose)
         if shape:
-            shape_list.append(shape)
+            shape_list = list(set(shape_list + shape))
 
     if shape_list:
         mc.select(shape_list)
@@ -1005,4 +1124,3 @@ GraphTreeView.pSelectionChanged
     psd_model_maya.refresh_pose_graph
         graph_widget.update_secondary_graph
 '''
-
