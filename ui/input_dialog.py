@@ -1,6 +1,6 @@
+from mix.ui import *
 import openrig.shared.common as common
 import model_manager
-from mix.ui import *
 import fields
 
 class InputDialog(QtWidgets.QWidget):
@@ -86,9 +86,19 @@ class InterpolationDialog(QtWidgets.QDialog):
         self.negative_weights_field = fields.BooleanField('Allow Negative Weights:', 1)
         self.track_rotation_field = fields.BooleanField('Track Rotation:', 1)
         self.track_translation_field = fields.BooleanField('Track Translation:', 0)
+        self.interpolation_combo_box = QtWidgets.QComboBox()
+        interpolation_layout = QtWidgets.QHBoxLayout()
+        interpolation_label = QtWidgets.QLabel('Interpolation: ')
+        interpolation_label.setFont(fields.BaseField.font)
+        self.interpolation_combo_box.addItems(['Linear', 'Gaussian'])
+        self.interpolation_combo_box.wheelEvent = self._combo_box_wheel_event
+        self.interpolation_combo_box.setCurrentIndex(0)
+        interpolation_layout.addWidget(interpolation_label)
+        interpolation_layout.addWidget(self.interpolation_combo_box)
         widget_layout.addStretch()
         widget_layout.addWidget(self.regularization_field)
         widget_layout.addWidget(self.smoothing_field)
+        widget_layout.addLayout(interpolation_layout)
         widget_layout.addWidget(self.negative_weights_field)
         widget_layout.addWidget(self.track_rotation_field)
         widget_layout.addWidget(self.track_translation_field)
@@ -110,3 +120,6 @@ class InterpolationDialog(QtWidgets.QDialog):
     def accept(self):
         model_manager.PSD_MODEL.set_interpolation(self.interp_list)
         self.close()
+
+    def _combo_box_wheel_event(self, event):
+        return

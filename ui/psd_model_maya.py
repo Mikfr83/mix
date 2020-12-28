@@ -389,6 +389,7 @@ def edit_interpolation(interp_graph, show=False):
     interpolation_widget.negative_weights_field.setValue(mc.getAttr('{}.allowNegativeWeights'.format(interp)))
     interpolation_widget.track_rotation_field.setValue(mc.getAttr('{}.enableRotation'.format(interp)))
     interpolation_widget.track_translation_field.setValue(mc.getAttr('{}.enableTranslation'.format(interp)))
+    interpolation_widget.interpolation_combo_box.setCurrentIndex(mc.getAttr('{}.interpolation'.format(interp)))
 
     if show:
         interpolation_widget.show()
@@ -402,6 +403,7 @@ def set_interpolation(interp_list):
         mc.setAttr('{}.allowNegativeWeights'.format(interp), interpolation_widget.negative_weights_field.value())
         mc.setAttr('{}.enableRotation'.format(interp), interpolation_widget.track_rotation_field.value())
         mc.setAttr('{}.enableTranslation'.format(interp), interpolation_widget.track_translation_field.value())
+        mc.setAttr('{}.interpolation'.format(interp), interpolation_widget.interpolation_combo_box.currentIndex())
 
 
 def rename_pose(interp_graph, pose_graph):
