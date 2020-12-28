@@ -184,27 +184,6 @@ def add_interpolator(interp_graph):
             return
         # Get all interps
         interp_list = rig_psd.getGroupChildren(group_name)
-
-        def _getBlendShape(message):
-            # pull up the dialog box
-            if interp_list:
-                blendShape_list = rig_psd.getDrivenNodes(interp_list[0])
-            else:
-                blendshape_list = mc.ls(type='blendShape')
-
-            text, ok = g_dialog.get_text('Blendshape', message, blendShape_list[0])
-            if not ok:
-                return
-            if not text:
-                return _getBlendShape('Please do not leave text field empty.')
-            if not mc.objExists(text) or mc.nodeType(text) != 'blendShape':
-                return _getBlendShape('Blendshape {} does not exist. Please select one that exist in your Maya session.')
-
-            return text
-
-        blendshape_name = _getBlendShape('Select Blendshape:')
-        if not blendshape_name:
-            return
         interp_name = '{}_poseInterpolator'.format(interp_text)
         print('Adding Interpolator [ {} ]'.format(interp_text))
         # create the interpolator and make the connection to the blendshape attribute
@@ -212,19 +191,11 @@ def add_interpolator(interp_graph):
         # make sure the attributes exist on the node and then make the connections
         if not mc.objExists('{}.driven_node'.format(interp)):
             mc.addAttr(interp, ln='driven_node', at='message')
-        if not mc.objExists('{}.driven_node'.format(blendshape_name)):
-            mc.addAttr(blendshape_name, ln='driven_node', at='message', multi=True)
 
-        # make the connection between the interp and the blendShape.
-        driven_node_connections = mc.listConnections('{}.driven_node'.format(interp)) or []
-        if blendshape_name not in driven_node_connections:
-            index = mm.eval('getNextFreeMultiIndex "{}.driven_node" 0'.format(blendshape_name))
-            mc.connectAttr('{}.driven_node'.format(interp), '{}.driven_node[{}]'.format(blendshape_name, index), f=True)
         # pull up the dialog box
         group_node = interp_graph.getNodeByName(group_name)
         interp_node = interp_graph.addNode(interp_text, group_node)
         interp_node.addAttribute('full_name', interp)
-        interp_node.addAttribute('driven_node', blendshape_name)
 
         update_primary()
     except:
@@ -281,7 +252,7 @@ def add_driven(interp_graph):
             interp = sel_nodes[index].getAttributeByName('full_name').getValue()
             # get all of the driven nodes. Currently only doing blendShapes.
             # TODO: this is currently only blendshapes. We will need to update this to act differently in the future.
-            driven_list = rig_psd.getDrivenNodes(interp)
+            driven_list = rig_psd.getDrivenNodes(interp) or list()
             geo_list = list()
             for node in driven_list:
                 if mc.nodeType(node) == 'blendShape':
@@ -299,11 +270,13 @@ def add_driven(interp_graph):
                 geo_blendshape_list = rig_blendShape.getBlendShapes(geo)
                 blendshape_name = '{}_blendShape'.format(geo)
                 if not blendshape_name in geo_blendshape_list:
-                    mc.blendShape(blendshape_name, g=geo)
+                    mc.select(geo, r=True)
+                    mc.blendShape(name=blendshape_name)
 
                 new_driven_list.append(blendshape_name)
 
             rig_psd.addDriven(interp, new_driven_list)
+            mc.select(sel_list)
     except:
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
