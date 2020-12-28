@@ -271,7 +271,7 @@ def add_driven(interp_graph):
                 blendshape_name = '{}_blendShape'.format(geo)
                 if not blendshape_name in geo_blendshape_list:
                     mc.select(geo, r=True)
-                    mc.blendShape(name=blendshape_name)
+                    mc.blendShape(name=blendshape_name, frontOfChain=True)
 
                 new_driven_list.append(blendshape_name)
 
