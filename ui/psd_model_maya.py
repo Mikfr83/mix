@@ -52,7 +52,6 @@ def target_double_clicked(pose_graph):
 def apply_pose(interp_graph, pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     sel_geo = mc.ls(sl=1, l=True)
-    print sel_geo
     selection_length = len(sel_geo)
     if selection_length == 1:
         sel_geo = sel_geo[0]
@@ -64,8 +63,6 @@ def apply_pose(interp_graph, pose_graph):
         for bs in blendshape_list:
             rig_psd.goToPose(interp, pose)
             pose_geo = get_pose_geo_path(bs, interp, pose)
-            print 'selected_geo----> ', sel_geo
-            print 'pose_geo----> ', pose_geo
             if sel_geo == pose_geo and selection_length == 1:
                 pose_geo = sel_geo
                 rig_psd.applyPoseSymmetry(interp, pose, bs, pose_geo)
@@ -656,17 +653,40 @@ def duplicate_shape(pose_graph):
         mc.select(dup_list)
 
 def delta_blend(pose_graph):
+    '''
+    This will run dela blend from the psd.py in openrig using the info from selected poses.
+
+    :param pose_graph:
+    :return:
+    '''
     sel_nodes = pose_graph.getSelectedNodes()
+    sel_geo = mc.ls(sl=1, l=True)
+    selection_length = len(sel_geo)
+    if selection_length == 1:
+        sel_geo = sel_geo[0]
+
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
         blendshape_list = rig_psd.getDrivenNodes(interp)
         for bs in blendshape_list:
             geo = get_pose_geo_path(bs, interp, pose)
+            source_geo = mc.deformer(bs, q=1, g=1)
+            source_geo = mc.listRelatives(source_geo, p=1, path=1)
+            if source_geo:
+                source_geo = source_geo[0].split('|')[-1]
             if not mc.objExists(geo):
                 continue
             rig_psd.goToPose(interp, pose)
-            rig_delta_blend.delta_blend(geo)
+            if sel_geo == geo and selection_length == 1:
+                geo = sel_geo
+                rig_delta_blend.delta_blend(interp, pose, bs, source_geo, geo)
+            elif selection_length >= 2:
+                rig_delta_blend.delta_blend(interp, pose, bs, source_geo, geo)
+
+
+
+
 
 def isolate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
