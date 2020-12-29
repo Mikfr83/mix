@@ -423,3 +423,44 @@ class BooleanField(BaseField):
             
         self._checkBox.blockSignals(False)
 
+
+class FloatField(BaseField):
+    def __init__(self, *args, **kwargs):
+        super(FloatField, self).__init__(*args, **kwargs)
+
+        self._layout = QtWidgets.QHBoxLayout()
+        self._lineEdit = QtWidgets.QLineEdit()
+        self._lineEdit.setFont(self.font)
+        self._lineEdit.setSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding,
+                                     QtWidgets.QSizePolicy.Policy.Fixed)
+
+        self._lineEdit.setValidator(QtGui.QDoubleValidator())
+
+        # set text if any value
+        if self.value():
+            self.setText(self.value())
+        # self._lineEdit.setMaximumHeight(20)
+        self._lineEdit.setMinimumHeight(40)
+        self._lineEdit.setMinimumWidth(200)
+        self._lineEdit.textChanged.connect(self.setText)
+
+        self._layout.addWidget(self.label())
+        self._layout.addWidget(self._lineEdit)
+        self._layout.addStretch()
+        self.setLayout(self._layout)
+
+    def setText(self, value):
+        '''
+        Sets the text for the QLineEdit
+        '''
+        # get the souce of the call for setText function
+        source = self.sender()
+
+        # set the value on field
+        self.setValue(str(value))
+        # set lineEdit text
+        if not source == self._lineEdit:
+            self._lineEdit.setText(str(value))
+
+    def getLineEdit(self):
+        return self._lineEdit
