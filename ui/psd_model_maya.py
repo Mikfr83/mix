@@ -684,10 +684,6 @@ def delta_blend(pose_graph):
             elif selection_length >= 2:
                 rig_delta_blend.delta_blend(interp, pose, bs, source_geo, geo)
 
-
-
-
-
 def isolate_shape(pose_graph):
     sel_nodes = pose_graph.getSelectedNodes()
     geos = []
