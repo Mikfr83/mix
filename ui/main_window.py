@@ -11,6 +11,7 @@ import maya.api.OpenMayaUI as omui2
 import model_manager
 import mix.ui.graph_tree_item as graph_tree_item
 import mix.ui.graph_widget as graph_widget
+
 # -------------------------------
 # MAIN WINDOW
 # -------------------------------
@@ -36,7 +37,7 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.deleteControl(self.window_name + 'WorkspaceControl')
         super(MainWindow, self).__init__(parent)
         # load in the style sheet
-
+        print self.window_name
         # set the window title and central widget
         self.setWindowTitle(self.window_name)
         self.setObjectName(self.window_name)
@@ -93,7 +94,21 @@ def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph
     :return: The instance of the window that was created.
     :rtype: QDockWidget | QMainWindow
     '''
-    # Create a workspace control for the mixin widget by passing all the needed parameters. See workspaceControl command documentation for all available flags.
+    # get the latest mix version and set the title
+    import mix
+    import os
+    import json
+    from collections import OrderedDict
+    VERSIONPATH = os.path.join(os.path.dirname(mix.__file__), 'version.json')
+    f = open(VERSIONPATH, 'r')
+    version_data = json.loads(f.read().decode('utf-8'), object_pairs_hook=OrderedDict)
+    MainWindow.window_name='Mix - v{}.{}.{}'.format(version_data['MIX']['MAJOR'],
+                                                    version_data['MIX']['MINOR'],
+                                                    version_data['MIX']['PATCH'])
+    f.close()
+
+    # Create a workspace control for the mixin widget by passing all the needed parameters.
+    # See workspaceControl command documentation for all available flags.
     main_window = MainWindow(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'),
                                                   graph_tree_item.GraphTreeItem('Poses')],
                                   weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'),
