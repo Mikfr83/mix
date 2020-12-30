@@ -11,7 +11,4 @@ Studios
 
 Contributors
 ------------
-
-The following people have contributed to openrig.
-* Joy Johnson
-* Erik Hansen
+The following people have contributed to Mix.
