@@ -93,6 +93,7 @@ class InterpolationDialog(QtWidgets.QDialog):
         self.interpolation_combo_box.addItems(['Linear', 'Gaussian'])
         self.interpolation_combo_box.wheelEvent = self._combo_box_wheel_event
         self.interpolation_combo_box.setCurrentIndex(0)
+        self.interpolation_combo_box.setFont(fields.BaseField.font)
         #interpolation_layout.addWidget(interpolation_label)
         #interpolation_layout.addWidget(self.interpolation_combo_box)
         '''
