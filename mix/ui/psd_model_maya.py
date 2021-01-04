@@ -381,21 +381,26 @@ def edit_interpolation(interp_graph, show=False):
     sel_nodes = interp_graph.getSelectedNodes()
 
     interpolation_widget.accept_signal.connect(set_interpolation)
-    interpolation_widget.set_interps([node.getAttributeByName('full_name').getValue() for node in sel_nodes])
+    interpolation_widget.set_interps([node.getAttributeByName('full_name').getValue() for node in sel_nodes if node.getAttributeByName('full_name')])
     selected_nodes = interp_graph.getSelectedNodes()
 
-    interp = sel_nodes[0].getAttributeByName('full_name').getValue()
-    interpolation_widget.regularization_field.setText(mc.getAttr('{}.regularization'.format(interp)))
-    interpolation_widget.smoothing_field.setText(mc.getAttr('{}.outputSmoothing'.format(interp)))
-    interpolation_widget.negative_weights_field.setValue(mc.getAttr('{}.allowNegativeWeights'.format(interp)))
-    interpolation_widget.track_rotation_field.setValue(mc.getAttr('{}.enableRotation'.format(interp)))
-    interpolation_widget.track_translation_field.setValue(mc.getAttr('{}.enableTranslation'.format(interp)))
-    interpolation_widget.interpolation_combo_box.setCurrentIndex(mc.getAttr('{}.interpolation'.format(interp)))
+    interp = None
+    for node in sel_nodes:
+        if node.getAttributeByName('full_name'):
+            interp = sel_nodes[0].getAttributeByName('full_name').getValue()
+            break
+    if interp:
+        interpolation_widget.regularization_field.setText(mc.getAttr('{}.regularization'.format(interp)))
+        interpolation_widget.smoothing_field.setText(mc.getAttr('{}.outputSmoothing'.format(interp)))
+        interpolation_widget.negative_weights_field.setValue(mc.getAttr('{}.allowNegativeWeights'.format(interp)))
+        interpolation_widget.track_rotation_field.setValue(mc.getAttr('{}.enableRotation'.format(interp)))
+        interpolation_widget.track_translation_field.setValue(mc.getAttr('{}.enableTranslation'.format(interp)))
+        interpolation_widget.interpolation_combo_box.setCurrentIndex(mc.getAttr('{}.interpolation'.format(interp)))
 
-    if show:
-        interpolation_widget.show()
-    else:
-        interpolation_widget.repaint()
+        if show:
+            interpolation_widget.show()
+        else:
+            interpolation_widget.repaint()
 
 def set_interpolation(interp_list):
     for interp in mc.ls(interp_list):
