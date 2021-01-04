@@ -34,10 +34,8 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         :param parent: The parent for the ui
         :type parent: QtGui.QWidget
         '''
-        self.deleteControl(self.window_name + 'WorkspaceControl')
+        self.delete_control(self.window_name + 'WorkspaceControl')
         super(MainWindow, self).__init__(parent)
-        # load in the style sheet
-        print self.window_name
         # set the window title and central widget
         self.setWindowTitle(self.window_name)
         self.setObjectName(self.window_name)
@@ -59,10 +57,12 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.mainLayout.addWidget(self.tabWidget)
         self.setLayout(self.mainLayout)
         self.resize(1200, 1200)
-        id = om2.MEventMessage.addEventCallback('SelectionChanged', self.updateDeformerList)
+        id = om2.MEventMessage.addEventCallback('SelectionChanged', self.update_deformer_list)
+        MainWindow.callback_id_list.append(id)
+        id = om2.MEventMessage.addEventCallback('SceneOpened', self.update_psd_widget)
         MainWindow.callback_id_list.append(id)
 
-    def deleteControl(self, control):
+    def delete_control(self, control):
         if mc.workspaceControl(control, q=True, exists=True):
             mc.workspaceControl(control, e=True, close=True)
             mc.deleteUI(control, control=True)
@@ -72,15 +72,24 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         super(MainWindow, self).closeEvent(event)
         self.delete_callbacks()
 
-    def updateDeformerList(self, *args):
+    def update_deformer_list(self, *args):
         self.weightsWidget.update_primary()
+
+    def update_psd_widget(self, *args):
+        '''
+        This method will update psd widget
+        :param args:
+        :return:
+        '''
+        self.psdWidget.update_primary()
+        self.psdWidget.update_secondary()
 
     @staticmethod
     def delete_callbacks():
         if MainWindow.callback_id_list:
             for id in MainWindow.callback_id_list:
-                MainWindow.callback_id_list.pop(MainWindow.callback_id_list.index(id))
                 om2.MMessage.removeCallback(id)
+            MainWindow.callback_id_list = []
 
 def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph_tree_item.GraphTreeItem('Poses')],
            weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'), graph_tree_item.GraphTreeItem('Maps')]):
