@@ -50,16 +50,21 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         # add menu and tool bar to window
         self.menuBar = QtWidgets.QMenuBar()
         self.menuBar.setObjectName('MenuBar')
+        toolBar = QtWidgets.QToolBar()
+        refreshAction = toolBar.addAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icons/refresh.png")),
+                                          'Refresh')
+        refreshAction.triggered.connect(self.update_widgets)
 
         # add menus to the menu bar
         fileMenu = self.menuBar.addMenu('File')
         self.mainLayout.setMenuBar(self.menuBar)
+        self.mainLayout.addWidget(toolBar)
         self.mainLayout.addWidget(self.tabWidget)
         self.setLayout(self.mainLayout)
         self.resize(1200, 1200)
         id = om2.MEventMessage.addEventCallback('SelectionChanged', self.update_deformer_list)
         MainWindow.callback_id_list.append(id)
-        id = om2.MEventMessage.addEventCallback('SceneOpened', self.update_psd_widget)
+        id = om2.MEventMessage.addEventCallback('SceneOpened', self.update_widgets)
         MainWindow.callback_id_list.append(id)
 
     def delete_control(self, control):
@@ -84,8 +89,21 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.psdWidget.update_primary()
         self.psdWidget.update_secondary()
 
+    def update_widgets(self, *args):
+        '''
+        This will update all widgets that need to be updated when starting a new session.
+        :param args:
+        :return:
+        '''
+        self.update_psd_widget()
+        self.update_deformer_list()
+
     @staticmethod
     def delete_callbacks():
+        '''
+        This method will ensure all callbacks are deleted.
+        '''
+
         if MainWindow.callback_id_list:
             for id in MainWindow.callback_id_list:
                 om2.MMessage.removeCallback(id)
