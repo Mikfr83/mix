@@ -21,7 +21,7 @@ Mix is a tool used for interacting and editing rigged characters. Mix was develo
 ```python
 import os, sys
 
-# repo path is the directory your repo is located. Where you cloned you're repo. 
+# repo path is the directory your repo's are located. Where you cloned your repo. 
 repo_path = 'C:/Users/{user}/Desktop/squarebit'
 openrig_path = os.path.join(repo_path, 'openrig')
 mix_path = os.path.join(repo_path, 'mix')
