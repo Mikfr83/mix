@@ -23,8 +23,8 @@ import os, sys
 
 # repo path is the directory your repo is located. Where you cloned you're repo. 
 repo_path = 'C:/Users/{user}/Desktop/squarebit'
-openrig_path = '{}/openrig'.format(repo_path)
-mix_path = '{}/mix'.format(repo_path)
+openrig_path = os.path.join(repo_path, 'openrig')
+mix_path = os.path.join(repo_path, 'mix')
 
 sys.path.append(openrig_path)
 sys.path.append(mix_path)
