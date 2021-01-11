@@ -300,9 +300,22 @@ def add_pose_control(interp_graph):
             # get the interp
             interp = interp_node.getAttributeByName('full_name').getValue()
             # loop through the selected controls
+            control_attr_list = list()
             for control in selected_controls:
-                control_attr_list = rig_attribute.get_resolved_attributes(control, selected_attributes)
-                rig_psd.addPoseControl(interp, control_attr_list)
+                attr_list = list()
+                animatable_attr_list = [attr for attr in rig_attribute.CHANNELBOX(control) if not mc.attributeQuery(attr, node=control, at=True) in ['message']]
+                if not selected_attributes:
+                    attr_list = animatable_attr_list
+                else:
+                    for attr in selected_attributes:
+                        if not mc.objExists('{}.{}'.format(control, attr)):
+                            continue
+                        if (mc.getAttr('{}.{}'.format(control, attr), l=True)
+                                or not mc.getAttr('{}.{}'.format(control, attr), k=True)):
+                            continue
+                        attr_list.append(attr)
+                control_attr_list.extend([attr for attr in rig_attribute.get_resolved_attributes(control, attr_list) if not '{}.{}'.format(control, attr) in animatable_attr_list])
+            rig_psd.addPoseControl(interp, control_attr_list)
             pose_names = rig_psd.getPoseNames(interp) or []
             # go through each existing pose and make sure that the pose information is updated.
             for pose in pose_names:
