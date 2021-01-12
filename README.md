@@ -1,4 +1,5 @@
-![mix](https://lh4.googleusercontent.com/proxy/CiO-uF8HvjVOVhrDLng1fBgt135blQzZCAPszFUbOXCtkdH2epqnPn_jvfC5sLg6-ZXaprH3PmwDwA8oe9NQq4Fc0vW3vNBPmC0ppCHZ__0wpHn7pBkBbqLNI4xbNhzQWWY5aun5s9eZiJV4GWaYK57CB6l06WqF)
+![mix](https://drive.google.com/uc?export=view&id=1t9a9mZr1iQRBr4H-xE7c2yXQVV-nDTY0)
+
 
 # Overview 
 Mix is a tool used for interacting and editing rigged characters. Mix was developed alongside Openrig( [Openrig Release](https://github.com/squarebit-studios/openrig/releases/latest) ) and is using libraries inside of it. Currently it only works with character in Maya built using Maya's PSD system. It is best to start from scratch. If you have not built a rig using Openrig
