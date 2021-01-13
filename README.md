@@ -18,7 +18,12 @@ Mix is a tool used for interacting and editing rigged characters. Mix was develo
 1. Download [Openrig](https://github.com/squarebit-studios/openrig/releases/latest) and [Mix](https://github.com/squarebit-studios/mix/releases/latest).
 2. Add the openrig and Mix package to your python sys.path so it is available to Maya. (See env example below)
 3. Open Mix with a rig using Maya's psd system
-4. Run a build by clicking the play/build button in nxt.
+4. Run the following code in Maya to launch the UI.
+
+```python
+import mix.ui.main_window as mix_ui
+mix_ui.launch()
+```
 
 # Python env setup example
 ```python

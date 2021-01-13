@@ -12,6 +12,7 @@ import model_manager
 import mix.ui.graph_tree_item as graph_tree_item
 import mix.ui.graph_widget as graph_widget
 
+ICONPATH = os.path.join(os.path.dirname(__file__), 'icons')
 # -------------------------------
 # MAIN WINDOW
 # -------------------------------
@@ -40,6 +41,7 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.setWindowTitle(self.window_name)
         self.setObjectName(self.window_name)
         self.tabWidget = QtWidgets.QTabWidget(self)
+        self.setWindowIcon(QtGui.QIcon(os.path.join(ICONPATH, 'mix_blue_icon.png')))
         self.psdWidget = graph_widget.GraphWidget(psd_graph_list[0], psd_graph_list[1], model=model_manager.PSD_MODEL)
         self.weightsWidget = graph_widget.GraphWidget(weights_graph_list[0], weights_graph_list[1],
                                                       model=model_manager.WEIGHTS_MODEL)
@@ -140,7 +142,7 @@ def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph
                                                   graph_tree_item.GraphTreeItem('Poses')],
                                   weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'),
                                                       graph_tree_item.GraphTreeItem('Maps')])
-    main_window.show(dockable=True, area='right', floating=False)
+    main_window.show(dockable=True, area='right', floating=True)
     mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name),
                         e=True,
                         ttc=["AttributeEditor", -1],
