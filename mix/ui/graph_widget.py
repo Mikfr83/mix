@@ -219,6 +219,7 @@ class GraphWidget(QtWidgets.QWidget):
         # Build model
         # Build model
         self._secondary_graph_model = self.model.GraphModel(self._secondary_graph)
+
         # Set model to the tree
         self._secondary_setupTreeView.setModel(self._secondary_graph_model)
 
