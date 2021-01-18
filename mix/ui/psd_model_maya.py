@@ -28,6 +28,8 @@ pose_control_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 driven_widget = QtWidgets.QListWidget()
 driven_widget.setWindowTitle('Drivens')
 driven_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+# For copy and paste of deltas between poses/targets
+DELTAS_COPIED = []
 
 def interp_clicked(interp_graph):
     '''
@@ -146,6 +148,105 @@ def delete_deltas(interp_graph, pose_graph):
     except:
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
+
+def copy_deltas(interp_graph, pose_graph):
+    global DELTAS_COPIED
+    DELTAS_COPIED = []
+    mc.undoInfo(openChunk=1)
+    try:
+        sel_nodes = pose_graph.getSelectedNodes()
+        if not sel_nodes:
+            return
+        for node in sel_nodes:
+            interp = node.getAttributeByName('interp').getValue()
+            pose = node.getAttributeByName('full_name').getValue()
+            blendshape_list = rig_psd.getDrivenNodes(interp)
+            for bs in blendshape_list:
+                if mc.objExists(bs+'.'+pose):
+                    deltas, indexes = rig_blendShape.getTargetDeltas(bs, pose)
+                    print('Copied deltas - {}.{}'.format(bs, pose))
+                    DELTAS_COPIED.append((bs, pose, deltas, indexes))
+    except:
+        traceback.print_exc()
+    mc.undoInfo(closeChunk=1)
+
+def paste_deltas(interp_graph, pose_graph):
+    if not DELTAS_COPIED:
+        return
+    copied_deltas_count = len(DELTAS_COPIED)
+    mc.undoInfo(openChunk=1)
+    try:
+        sel_nodes = pose_graph.getSelectedNodes()
+        sel_nodes_count = len(sel_nodes)
+        i=0
+        for node in sel_nodes:
+            interp = node.getAttributeByName('interp').getValue()
+            pose = node.getAttributeByName('full_name').getValue()
+            blendshape_list = rig_psd.getDrivenNodes(interp)
+            for bs in blendshape_list:
+                if mc.objExists(bs+'.'+pose):
+                    # If only one set of deltas has been copied, paste that to all the selected poses
+                    if copied_deltas_count == 1:
+                        source_bs = DELTAS_COPIED[0][0]
+                        source_pose = DELTAS_COPIED[0][1]
+                        deltas = DELTAS_COPIED[0][2]
+                        indexes = DELTAS_COPIED[0][3]
+                        print('Paste deltas - {}.{} --> {}.{}'.format(source_bs, source_pose, bs, pose))
+                        rig_blendShape.setTargetDeltas(bs, deltas, indexes, pose)
+                    # Multiple deltas were copied so apply them in order, stops pasting if selection
+                    # count is greater than copied deltas
+                    elif i < copied_deltas_count:
+                        source_bs = DELTAS_COPIED[0][0]
+                        source_pose = DELTAS_COPIED[i][1]
+                        deltas = DELTAS_COPIED[i][2]
+                        indexes = DELTAS_COPIED[i][3]
+                        print('Paste deltas - {}.{} --> {}.{}'.format(source_bs, source_pose, bs, pose))
+                        rig_blendShape.setTargetDeltas(bs, deltas, indexes, pose)
+                        i+=1
+    except:
+        traceback.print_exc()
+    mc.undoInfo(closeChunk=1)
+
+def prune_deltas(interp_graph, pose_graph):
+    threshold, ok = g_dialog.get_double('Prune Deltas', 'Threshold:', float(0.001))
+    if not ok:
+        return
+    mc.undoInfo(openChunk=1)
+
+    try:
+        sel_nodes = pose_graph.getSelectedNodes()
+        for node in sel_nodes:
+            interp = node.getAttributeByName('interp').getValue()
+            pose = node.getAttributeByName('full_name').getValue()
+            blendshape_list = rig_psd.getDrivenNodes(interp)
+            for bs in blendshape_list:
+                if mc.objExists(bs+'.'+pose):
+                    rig_blendShape.pruneDeltas(bs, [pose], threshold, zero_weight_prune=False)
+    except:
+        traceback.print_exc()
+    mc.undoInfo(closeChunk=1)
+
+def select_deltas(interp_graph, pose_graph):
+    try:
+        sel_nodes = pose_graph.getSelectedNodes()
+        all_delta_indexes = []
+        for node in sel_nodes:
+            interp = node.getAttributeByName('interp').getValue()
+            pose = node.getAttributeByName('full_name').getValue()
+            blendshape_list = rig_psd.getDrivenNodes(interp)
+            for bs in blendshape_list:
+                if mc.objExists(bs+'.'+pose):
+                    geo = mc.deformer(bs, q=1, g=1)
+                    if geo:
+                        deltas, indexes = rig_blendShape.getTargetDeltas(bs, pose)
+                        points = [geo[0]+'.'+x for x in indexes]
+                        all_delta_indexes += points
+        if all_delta_indexes:
+            mc.select(all_delta_indexes)
+    except:
+        traceback.print_exc()
+    mc.undoInfo(closeChunk=1)
+
 
 def add_interpolator(interp_graph):
     '''
@@ -1177,6 +1278,11 @@ def build_pose_graph(interp_graph, pose_graph):
         {'position': 'NE', 'text': 'Mirror Deltas', 'func': partial(mirror_delta, pose_graph)},
         {'position': 'NW', 'text': 'Delta Blend', 'func': partial(delta_blend, pose_graph)},
         {'position': 'SE', 'text': 'Isolate Toggle', 'func': partial(isolate_shape, pose_graph)},
+        {'position': '', 'text': 'Copy Deltas', 'func': partial(copy_deltas, interp_graph, pose_graph)},
+        {'position': '', 'text': 'Paste Deltas', 'func': partial(paste_deltas, interp_graph, pose_graph)},
+        {'position': '', 'text': '-------------', 'func': None},
+        {'position': '', 'text': 'Select Deltas', 'func': partial(select_deltas, interp_graph, pose_graph)},
+        {'position': '', 'text': 'Prune Deltas', 'func': partial(prune_deltas, interp_graph, pose_graph)},
         {'position': '', 'text': 'Delete Deltas', 'func': partial(delete_deltas, interp_graph, pose_graph)},
         {'position': '', 'text': '-------------', 'func': None},
         {'position': '', 'text': 'Add Pose', 'func': partial(add_pose, interp_graph, pose_graph)},

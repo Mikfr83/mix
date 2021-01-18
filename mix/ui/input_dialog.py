@@ -12,6 +12,12 @@ class InputDialog(QtWidgets.QWidget):
 
         return (text, ok)
 
+    def get_double(self, title='Title', description='Enter Value:', default_value=0.000):
+        # TODO: Step is not working, not sure why.
+        double, ok = QtWidgets.QInputDialog.getDouble(self, title, description, default_value, -10000, 10000, 3, step=0.001)
+
+        return (double, ok)
+
     def get_item(self, title='Title', description='Enter Name:', default_items=[], default_index=0):
         item, ok =  QtWidgets.QInputDialog.getItem(self, title, description, default_items, default_index, False)
 
