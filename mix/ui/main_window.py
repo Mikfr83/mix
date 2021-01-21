@@ -142,7 +142,7 @@ def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph
                                                   graph_tree_item.GraphTreeItem('Poses')],
                                   weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'),
                                                       graph_tree_item.GraphTreeItem('Maps')])
-    main_window.show(dockable=True, area='right', floating=True)
+    main_window.show(dockable=False, area='right', floating=True)
     mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name),
                         e=True,
                         ttc=["AttributeEditor", -1],
