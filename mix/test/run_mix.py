@@ -63,8 +63,8 @@ import mix.ui.main_window as main_window
 main_window.MainWindow.delete_callbacks()
 reload(main_window)
 
-def launch():
-    main_window.launch()
+def launch(dock=False):
+    main_window.launch(dock=dock)
 
 if __name__ == '__main__':
     launch()
