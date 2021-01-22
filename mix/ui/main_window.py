@@ -112,7 +112,8 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             MainWindow.callback_id_list = []
 
 def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph_tree_item.GraphTreeItem('Poses')],
-           weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'), graph_tree_item.GraphTreeItem('Maps')]):
+           weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'), graph_tree_item.GraphTreeItem('Maps')],
+           dock=False):
     '''
     This function will launch the window docked or undocked based on
     argument passed in.
@@ -142,12 +143,16 @@ def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph
                                                   graph_tree_item.GraphTreeItem('Poses')],
                                   weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'),
                                                       graph_tree_item.GraphTreeItem('Maps')])
-    main_window.show(dockable=False, area='right', floating=True)
-    mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name),
+
+    main_window.show(dockable=dock, area='right', floating=True)
+    if dock:
+        mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name),
                         e=True,
                         ttc=["AttributeEditor", -1],
                         wp="preferred",
-                        mw=200)
+                        iw=200,
+                        mw=True)
+
     main_window.psdWidget.model.update_secondary = main_window.psdWidget.update_secondary
     main_window.psdWidget.model.update_primary = main_window.psdWidget.update_primary
 
