@@ -146,7 +146,13 @@ def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph
 
     main_window.show(dockable=dock, area='right', floating=True)
     if dock:
-        mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name), e=True)
+        mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name), e=True, mw=True, iw=200)
+        control_widget = OpenMayaUI.MQtUtil.findControl('{}WorkspaceControl'.format(main_window.window_name))
+
+        control_wrap = wrapinstance(long(control_widget), QtWidgets.QWidget)
+
+        control_window = control_wrap.window()
+        control_window.setWindowIcon(QtGui.QIcon(os.path.join(ICONPATH, 'mix_blue_icon.png')))
 
     main_window.psdWidget.model.update_secondary = main_window.psdWidget.update_secondary
     main_window.psdWidget.model.update_primary = main_window.psdWidget.update_primary
