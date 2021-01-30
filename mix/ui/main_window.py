@@ -146,12 +146,7 @@ def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph
 
     main_window.show(dockable=dock, area='right', floating=True)
     if dock:
-        mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name),
-                        e=True,
-                        ttc=["AttributeEditor", -1],
-                        wp="preferred",
-                        iw=200,
-                        mw=True)
+        mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name), e=True)
 
     main_window.psdWidget.model.update_secondary = main_window.psdWidget.update_secondary
     main_window.psdWidget.model.update_primary = main_window.psdWidget.update_primary
