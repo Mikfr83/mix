@@ -50,7 +50,7 @@ def target_double_clicked(pose_graph):
         node = sel_nodes[0]
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
-        rig_psd.goToPose(interp, pose)
+        rig_psd.goToPose(interp, pose, symmetry)
     update_secondary()
 
 def apply_pose(interp_graph, pose_graph):
