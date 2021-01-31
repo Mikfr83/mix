@@ -56,6 +56,14 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         refreshAction = toolBar.addAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icons/refresh.png")),
                                           'Refresh')
         refreshAction.triggered.connect(self.update_widgets)
+        symmetryAction = toolBar.addAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icons/symmetry.png")),
+                                          'Symmetry')
+
+        symmetryAction.setCheckable(True)
+        symmetryAction.setChecked(True)
+
+        refreshAction.triggered.connect(self.update_widgets)
+        symmetryAction.toggled.connect(self.set_symmetry)
 
         # add menus to the menu bar
         fileMenu = self.menuBar.addMenu('File')
@@ -63,7 +71,7 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.mainLayout.addWidget(toolBar)
         self.mainLayout.addWidget(self.tabWidget)
         self.setLayout(self.mainLayout)
-        self.resize(1200, 1200)
+        self.resize(1000, 1000)
         id = om2.MEventMessage.addEventCallback('SelectionChanged', self.update_deformer_list)
         MainWindow.callback_id_list.append(id)
         id = om2.MEventMessage.addEventCallback('SceneOpened', self.update_widgets)
@@ -94,11 +102,18 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def update_widgets(self, *args):
         '''
         This will update all widgets that need to be updated when starting a new session.
-        :param args:
-        :return:
         '''
         self.update_psd_widget()
         self.update_deformer_list()
+
+    def set_symmetry(self, *args):
+        '''
+        This will set the model symmetry attribute
+        '''
+        if self.psdWidget.model.symmetry:
+            self.psdWidget.model.symmetry = False
+        else:
+            self.psdWidget.model.symmetry = True
 
     @staticmethod
     def delete_callbacks():
@@ -144,9 +159,9 @@ def launch(psd_graph_list=[graph_tree_item.GraphTreeItem('Interpolators'), graph
                                   weights_graph_list=[graph_tree_item.GraphTreeItem('Deformers'),
                                                       graph_tree_item.GraphTreeItem('Maps')])
 
-    main_window.show(dockable=dock, area='right', floating=True)
+    main_window.show(dockable=dock, floating=True)
     if dock:
-        mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name), e=True, mw=True, iw=200)
+        mc.workspaceControl('{}WorkspaceControl'.format(main_window.window_name), e=True)
 
     main_window.psdWidget.model.update_secondary = main_window.psdWidget.update_secondary
     main_window.psdWidget.model.update_primary = main_window.psdWidget.update_primary

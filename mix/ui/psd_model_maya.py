@@ -13,6 +13,7 @@ import traceback
 # Pointer to secondary update function
 update_primary = None
 update_secondary = None
+symmetry = True
 # Pointer to qDialog
 g_dialog = mix.ui.input_dialog.InputDialog()
 interpolation_widget = mix.ui.input_dialog.InterpolationDialog()
@@ -28,6 +29,7 @@ pose_control_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
 driven_widget = QtWidgets.QListWidget()
 driven_widget.setWindowTitle('Drivens')
 driven_widget.setWindowFlags(QtCore.Qt.WindowStaysOnTopHint)
+
 # For copy and paste of deltas between poses/targets
 DELTAS_COPIED = []
 
@@ -52,6 +54,7 @@ def target_double_clicked(pose_graph):
     update_secondary()
 
 def apply_pose(interp_graph, pose_graph):
+    global symmetry
     sel_nodes = pose_graph.getSelectedNodes()
     sel_geo = mc.ls(sl=1, l=True)
     selection_length = len(sel_geo)
@@ -68,9 +71,19 @@ def apply_pose(interp_graph, pose_graph):
                 pose_geo = get_pose_geo_path(driven, interp, pose)
                 if sel_geo == pose_geo and selection_length == 1:
                     pose_geo = sel_geo
-                    rig_psd.applyPoseSymmetry(interp, pose, driven, pose_geo)
+                    if symmetry:
+                        print 'symmetry is on!!!!'
+                        rig_psd.applyPoseSymmetry(interp, pose, driven, pose_geo)
+                    else:
+                        print 'symmetry is off!!!!'
+                        rig_psd.applyPose(interp, pose, driven, pose_geo)
                 elif selection_length >= 2:
-                    rig_psd.applyPoseSymmetry(interp, pose, driven, pose_geo)
+                    if symmetry:
+                        print 'symmetry is on!!!!'
+                        rig_psd.applyPoseSymmetry(interp, pose, driven, pose_geo)
+                    else:
+                        print 'symmetry is off!!!!'
+                        rig_psd.applyPose(interp, pose, driven, pose_geo)
 
 def get_pose_geo_path(bs, interp, pose):
     interp_name = rig_psd.getInterpNiceName(interp) + '_interp'
