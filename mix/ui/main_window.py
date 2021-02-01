@@ -56,11 +56,13 @@ class MainWindow(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         refreshAction = toolBar.addAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icons/refresh.png")),
                                           'Refresh')
         refreshAction.triggered.connect(self.update_widgets)
+        refreshAction.setToolTip('Refresh your interp graph.')
         symmetryAction = toolBar.addAction(QtGui.QIcon(os.path.join(os.path.dirname(__file__), "icons/symmetry.png")),
                                           'Symmetry')
 
         symmetryAction.setCheckable(True)
         symmetryAction.setChecked(True)
+        symmetryAction.setToolTip('Symmetry toggle')
 
         refreshAction.triggered.connect(self.update_widgets)
         symmetryAction.toggled.connect(self.set_symmetry)
