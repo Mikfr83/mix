@@ -66,24 +66,21 @@ def apply_pose(interp_graph, pose_graph):
         pose = node.getAttributeByName('full_name').getValue()
         driven_list = node.getAttributeByName('drivens').getValue()
         for driven in driven_list:
-            rig_psd.goToPose(interp, pose)
             if mc.nodeType(driven) == 'blendShape':
                 pose_geo = get_pose_geo_path(driven, interp, pose)
+                if not mc.objExists(pose_geo):
+                    continue
                 if sel_geo == pose_geo and selection_length == 1:
                     pose_geo = sel_geo
                     if symmetry:
-                        print 'symmetry is on!!!!'
                         rig_psd.applyPoseSymmetry(interp, pose, driven, pose_geo)
                     else:
-                        print 'symmetry is off!!!!'
-                        rig_psd.applyPose(interp, pose, driven, pose_geo)
+                        rig_psd.applyPose(interp, pose, driven, pose_geo, symmetry)
                 elif selection_length >= 2:
                     if symmetry:
-                        print 'symmetry is on!!!!'
                         rig_psd.applyPoseSymmetry(interp, pose, driven, pose_geo)
                     else:
-                        print 'symmetry is off!!!!'
-                        rig_psd.applyPose(interp, pose, driven, pose_geo)
+                        rig_psd.applyPose(interp, pose, driven, pose_geo, symmetry)
 
 def get_pose_geo_path(bs, interp, pose):
     interp_name = rig_psd.getInterpNiceName(interp) + '_interp'
