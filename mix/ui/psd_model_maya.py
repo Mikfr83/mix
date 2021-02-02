@@ -257,7 +257,6 @@ def select_deltas(interp_graph, pose_graph):
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
-
 def add_interpolator(interp_graph):
     '''
     Add an interpolator to the the graph.
@@ -794,12 +793,13 @@ def enable_toggle(pose_graph):
     update_secondary()
 
 def duplicate_shape(pose_graph):
+    global symmetry
     sel_nodes = pose_graph.getSelectedNodes()
     dup_list = []
     for node in sel_nodes:
         interp = node.getAttributeByName('interp').getValue()
         pose = node.getAttributeByName('full_name').getValue()
-        dup_list.extend(rig_psd.duplicatePoseShape(interp, pose) or list())
+        dup_list.extend(rig_psd.duplicatePoseShape(interp, pose, symmetry) or list())
         node.editOn()
 
     # unlock attributes on the transforms of duplicates.
