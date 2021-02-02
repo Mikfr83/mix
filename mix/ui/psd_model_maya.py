@@ -375,12 +375,12 @@ def add_driven(interp_graph):
 
             # get the transforms for the shape nodes.
             geo_list = [mc.listRelatives(geo, p=True)[0] for geo in geo_list]
-            add_list = [node for node in sel_list if not node in geo_list]
+            #add_list = [node for node in sel_list if not node in geo_list]
 
             # if node in add_list has a blendShape with the same name as geometry, we will use that. Otherwise, we will make
             # a blendShape that is front of chain using the name of geometry as a prefix
             new_driven_list = list()
-            for geo in add_list:
+            for geo in geo_list:
                 # get the blendShapes on the geometry
                 geo_blendshape_list = rig_blendShape.getBlendShapes(geo)
                 blendshape_name = '{}_blendShape'.format(geo)
