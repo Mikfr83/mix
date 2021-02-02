@@ -397,6 +397,52 @@ def add_driven(interp_graph):
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
 
+def select_driven_geometry(interp_graph):
+    '''
+    This will select all geometry associated with driven blendshapes.
+    :param interp_graph: Interpolator graph
+    :return: list of driven geometry
+    '''
+    mc.undoInfo(openChunk=1)
+    try:
+        driven_list = select_drivens(interp_graph, False)
+        geo_list = list()
+        for node in driven_list:
+            if mc.nodeType(node) == 'blendShape':
+                geo_list.extend(list(set(geo_list + mc.blendShape(node, q=True, g=True))))
+        mc.select(geo_list)
+        return geo_list
+    except:
+        traceback.print_exc()
+    mc.undoInfo(closeChunk=1)
+
+def select_drivens(interp_graph, select=True):
+    '''
+    This will select all driven blendShapes.
+    :param interp_graph: Interpolator graph
+    :return: list of blendShapes
+    '''
+    mc.undoInfo(openChunk=1)
+    try:
+        sel_nodes = interp_graph.getSelectedNodes()
+        if not sel_nodes:
+            return
+        print sel_nodes
+        # loop through each interp and add drivens to the poses if they don't currently exist.
+        driven_list = list()
+        for index, interp_node in enumerate(sel_nodes):
+            # Get a pose default name to enter in the text
+            interp = interp_node.getAttributeByName('full_name').getValue()
+            # get all of the driven nodes. Currently only doing blendShapes.
+            # TODO: this is currently only blendshapes. We will need to update this to act differently in the future.
+            driven_list.extend(rig_psd.getDrivenNodes(interp) or list())
+        if select:
+            mc.select(driven_list)
+        return driven_list
+    except:
+        traceback.print_exc()
+    mc.undoInfo(closeChunk=1)
+
 def add_pose_control(interp_graph):
     '''
     This will add selected attributes as a pose control for the interpolator selected in the graph.
@@ -818,6 +864,7 @@ def delta_blend(pose_graph):
     :param pose_graph:
     :return:
     '''
+    global symmetry
     sel_nodes = pose_graph.getSelectedNodes()
     sel_geo = mc.ls(sl=1, l=True)
     selection_length = len(sel_geo)
@@ -836,7 +883,7 @@ def delta_blend(pose_graph):
                 source_geo = source_geo[0].split('|')[-1]
             if not mc.objExists(geo):
                 continue
-            rig_psd.goToPose(interp, pose)
+            rig_psd.goToPose(interp, pose, symmetry)
             if sel_geo == geo and selection_length == 1:
                 geo = sel_geo
                 rig_delta_blend.delta_blend(interp, pose, bs, source_geo, geo)
@@ -1086,6 +1133,8 @@ def build_interp_graph(interp_graph):
         {'position': '', 'text': 'View Pose Controls', 'func': partial(view_pose_controls, interp_graph, True)},
         {'position': '', 'text': '-------------', 'func': None},
         {'position': '', 'text': 'Add Driven', 'func': partial(add_driven, interp_graph)},
+        {'position': '', 'text': 'Select Driven Geometry', 'func': partial(select_driven_geometry, interp_graph)},
+        {'position': '', 'text': 'Select Drivens', 'func': partial(select_drivens, interp_graph)},
         {'position': '', 'text': 'View Drivens', 'func': partial(view_drivens, interp_graph, True)},
         {'position': '', 'text': '-------------', 'func': None},
 
