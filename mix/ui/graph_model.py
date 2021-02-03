@@ -43,6 +43,8 @@ class GraphModel(QtCore.QAbstractItemModel):
         elif role == QtCore.Qt.ForegroundRole:#DecorationRole:
             if node.isLive():
                 return QtGui.QColor("crimson")
+            if 'neutral' in node.getName():
+                return QtGui.QColor("gray")
             if node.isActive():
                 if node.isEdit():
                     return QtGui.QColor("white")
