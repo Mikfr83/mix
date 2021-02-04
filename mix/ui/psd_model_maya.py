@@ -367,32 +367,34 @@ def add_driven(interp_graph):
             interp = interp_node.getAttributeByName('full_name').getValue()
             # get all of the driven nodes. Currently only doing blendShapes.
             # TODO: this is currently only blendshapes. We will need to update this to act differently in the future.
-            driven_list = rig_psd.getDrivenNodes(interp) or list()
-            geo_list = list()
-            for node in driven_list:
-                if mc.nodeType(node) == 'blendShape':
-                    geo_list = list(set(geo_list + mc.blendShape(node, q=True, g=True)))
-
-            # get the transforms for the shape nodes.
-            geo_list = [mc.listRelatives(geo, p=True)[0] for geo in geo_list]
-            geo_list.extend(sel_list)
+            driven_list = list()
 
             # if node in add_list has a blendShape with the same name as geometry, we will use that. Otherwise, we will make
             # a blendShape that is front of chain using the name of geometry as a prefix
-            new_driven_list = list()
-            for geo in geo_list:
+            for geo in sel_list:
+                shape_list = mc.listRelatives(geo, c=True, shapes=True, type='mesh')
+                if not shape_list:
+                    continue
                 # get the blendShapes on the geometry
                 geo_blendshape_list = rig_blendShape.getBlendShapes(geo)
-                blendshape_name = '{}_blendShape'.format(geo)
-                if not blendshape_name in geo_blendshape_list:
+                if not geo_blendshape_list:
+                    blendshape_name = '{}_blendShape'.format(geo)
                     mc.select(geo, r=True)
                     mc.blendShape(name=blendshape_name, frontOfChain=True)
+                elif len(geo_blendshape_list) > 1:
+                    blendshape_name, ok = g_dialog.get_item(title='Select {} Blendshapes'.format(geo), description='BlendShape',
+                                                        default_items=geo_blendshape_list)
+                    print ok
+                    if not ok:
+                        continue
+                else:
+                    blendshape_name = geo_blendshape_list[0]
 
-                new_driven_list.append(blendshape_name)
-
-            rig_psd.addDriven(interp, new_driven_list)
-            interp_node.getAttributeByName('drivens').setValue(new_driven_list)
-            mc.select(sel_list)
+                driven_list.append(blendshape_name)
+            if driven_list:
+                rig_psd.addDriven(interp, driven_list)
+                interp_node.getAttributeByName('drivens').setValue(driven_list)
+        mc.select(sel_list)
     except:
         traceback.print_exc()
     mc.undoInfo(closeChunk=1)
