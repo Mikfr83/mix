@@ -374,10 +374,15 @@ def add_driven(interp_graph):
             for geo in sel_list:
                 # get the blendShapes on the geometry
                 geo_blendshape_list = rig_blendShape.getBlendShapes(geo)
-                blendshape_name = '{}_blendShape'.format(geo)
                 if not geo_blendshape_list:
+                    blendshape_name = '{}_blendShape'.format(geo)
                     mc.select(geo, r=True)
                     mc.blendShape(name=blendshape_name, frontOfChain=True)
+                elif len(geo_blendshape_list) > 1:
+                    blendshape_name, ok = g_dialog.get_item(title='Select Blendshapes', description='BlendShape',
+                                                        default_items=geo_blendshape_list)
+                else:
+                    blendshape_name = geo_blendshape_list[0]
 
                 driven_list.append(blendshape_name)
 
